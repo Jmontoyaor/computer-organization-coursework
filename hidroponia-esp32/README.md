@@ -51,6 +51,16 @@ Antes de confiar en las lecturas, calibra cada sensor editando `include/config.h
 
 Los rangos "saludables" que colorean las tarjetas del dashboard (verde = OK, rojo = fuera de rango) se ajustan en `data/app.js`, objeto `ranges`. Los valores por defecto son de referencia para lechuga/hortalizas de hoja; ajústalos al cultivo real.
 
+## Previsualizar el dashboard sin el ESP32
+
+`tools/preview_server.py` sirve `data/` en tu máquina y simula lecturas de sensores por WebSocket, para iterar el diseño del dashboard sin flashear el firmware ni tener el hardware a mano.
+
+```bash
+pip install -r tools/requirements.txt
+python3 tools/preview_server.py
+# abrir http://localhost:8080
+```
+
 ## Estructura del proyecto
 
 ```
@@ -58,10 +68,13 @@ hidroponia-esp32/
 ├── platformio.ini      # Configuración del proyecto y dependencias
 ├── include/config.h    # Pines, credenciales WiFi y constantes de calibración
 ├── src/main.cpp         # Firmware: lectura de sensores + servidor web/WebSocket
-└── data/                # Dashboard web (se sube al ESP32 vía LittleFS)
-    ├── index.html
-    ├── style.css
-    └── app.js
+├── data/                # Dashboard web (se sube al ESP32 vía LittleFS)
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+└── tools/
+    ├── preview_server.py   # Servidor local de previsualización (sin hardware)
+    └── requirements.txt
 ```
 
 ## Notas
