@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor Hidropónico</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Monitor Hidropónico</h1>
+  <div class="badges">
+    <span id="connection-status" data-status="unknown">Conectando...</span>
+    <span>Uptime: <span id="uptime">--</span></span>
+  </div>
+</header>
+
+<main class="grid">
+  <section class="card" data-card="ph">
+    <h2>pH</h2>
+    <p class="value" data-value="ph">--</p>
+    <canvas class="chart" data-chart="ph"></canvas>
+  </section>
+
+  <section class="card" data-card="temperature">
+    <h2>Temperatura</h2>
+    <p class="value" data-value="temperature">--</p>
+    <canvas class="chart" data-chart="temperature"></canvas>
+  </section>
+
+  <section class="card" data-card="tds">
+    <h2>TDS / EC</h2>
+    <p class="value" data-value="tds">--</p>
+    <canvas class="chart" data-chart="tds"></canvas>
+  </section>
+
+  <section class="card" data-card="waterLevel">
+    <h2>Nivel de agua</h2>
+    <p class="value" data-value="waterLevel">--</p>
+    <canvas class="chart" data-chart="waterLevel"></canvas>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
