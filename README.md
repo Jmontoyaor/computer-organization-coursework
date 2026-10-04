@@ -1,4 +1,4 @@
-# estructuras-computacionales-riscv
+# Computer Organization Coursework
 
 Estructuras Computacionales - proyectos y ejercicios del curso.
 
