@@ -1,0 +1,8 @@
+{
+  "files.associations": { "*.s": "arm" },
+  "VsCodeTaskButtons.tasks": [
+    { "label": "$(tools) Compilar", "task": "Compilar" },
+    { "label": "$(zap) Cargar", "task": "Cargar a la placa" },
+    { "label": "$(trash) Limpiar", "task": "Limpiar" }
+  ]
+}

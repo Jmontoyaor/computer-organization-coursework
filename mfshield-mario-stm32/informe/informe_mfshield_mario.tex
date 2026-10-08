@@ -1,0 +1,1105 @@
+% =====================================================================
+%  Informe técnico: mfshield_mario
+%  Tema de Super Mario Bros en la Multi-Function Shield + NUCLEO-L476RG
+%  Compilar con pdfLaTeX (dos pasadas):  pdflatex informe_mfshield_mario.tex
+% =====================================================================
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands,es-tabla,es-nodecimaldot]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[letterpaper,margin=2.4cm,headheight=14pt]{geometry}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\usepackage{array,booktabs,tabularx}
+\usepackage{enumitem}
+\usepackage[font=small,labelfont={bf,sf},format=hang]{caption}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,shapes.misc,calc,fit,backgrounds,babel}
+\usepackage[colorlinks=true,linkcolor=azul,urlcolor=azul,citecolor=azul]{hyperref}
+
+% --------------------------------------------------------------- Autor
+% Escribe tu nombre entre las llaves para que aparezca bajo el título.
+\newcommand*{\autor}{}
+
+% ------------------------------------------------------------- Colores
+\definecolor{tinta}{HTML}{2B2B2B}
+\definecolor{gris}{HTML}{66707A}
+\definecolor{grisclaro}{HTML}{F4F5F7}
+\definecolor{borde}{HTML}{A7AEB8}
+\definecolor{azul}{HTML}{1F5FA6}
+\definecolor{azulclaro}{HTML}{E7EFF9}
+\definecolor{verde}{HTML}{2E7D4F}
+\definecolor{verdeclaro}{HTML}{E3F2E8}
+\definecolor{amarilloclaro}{HTML}{FFF3D1}
+\definecolor{naranja}{HTML}{C8650A}
+\definecolor{rojo}{HTML}{B3261E}
+
+% ----------------------------------------------------- Títulos y página
+\titleformat{\section}{\sffamily\Large\bfseries\color{azul}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\sffamily\large\bfseries\color{tinta}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{18pt plus 4pt minus 2pt}{8pt plus 2pt}
+\titlespacing*{\subsection}{0pt}{12pt plus 3pt minus 2pt}{5pt plus 2pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\small\color{gris}Informe técnico: mfshield\_mario}
+\fancyhead[R]{\sffamily\small\color{gris}NUCLEO-L476RG + Multi-Function Shield}
+\fancyfoot[C]{\sffamily\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\setlist{itemsep=3pt, topsep=4pt}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\renewcommand{\arraystretch}{1.15}
+
+% Referencia a líneas de Src/main.s dentro de los diagramas
+\newcommand{\lin}[1]{\,{\tiny\color{gris}[#1]}}
+
+% ------------------------------------------------- Código en ensamblador
+\lstdefinelanguage{armasm}{
+  alsoletter={.},
+  morekeywords={ldr,ldrh,ldrb,str,orr,bic,mov,movs,movne,moveq,bl,b,beq,bne,blt,
+                cbz,cmp,udiv,mls,subs,adds,lsr,lsl,push,pop,bx,tst,ite},
+  morekeywords=[2]{.syntax,.global,.equ,.section,.type,.size,.byte,.hword,
+                   .balign,.rept,.endr},
+  sensitive=false,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+}
+\lstset{
+  language=armasm,
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{azul}\bfseries,
+  keywordstyle=[2]\color{verde},
+  commentstyle=\color{gris}\itshape,
+  numbers=left, numberstyle=\tiny\color{gris}, numbersep=7pt,
+  tabsize=4, columns=fixed, basewidth=0.5em,
+  breaklines=true, breakatwhitespace=true,
+  frame=lines, framerule=0.4pt, rulecolor=\color{borde},
+  showstringspaces=false, xleftmargin=2em, framexleftmargin=1.6em,
+}
+
+% ------------------------------------------------------ Estilos de TikZ
+\tikzset{
+  >={Stealth[length=2.3mm,width=1.7mm]},
+  base/.style={draw=tinta, line width=0.55pt, font=\scriptsize, align=center, inner sep=2.6pt,
+              execute at begin node={\hyphenpenalty=10000\exhyphenpenalty=10000}},
+  terminal/.style={base, rounded rectangle, fill=verdeclaro, minimum height=6.5mm,
+                   inner xsep=9pt, font=\scriptsize\bfseries},
+  proceso/.style={base, rectangle, rounded corners=1.5pt, fill=white, text width=#1, inner xsep=5.5pt, minimum height=7.5mm},
+  proceso/.default=44mm,
+  subrutina/.style={proceso=#1, fill=azulclaro, inner xsep=5.5pt, path picture={
+      \draw[tinta, line width=0.45pt]
+        ([xshift=3.2pt]path picture bounding box.north west) -- ([xshift=3.2pt]path picture bounding box.south west)
+        ([xshift=-3.2pt]path picture bounding box.north east) -- ([xshift=-3.2pt]path picture bounding box.south east);}},
+  subrutina/.default=44mm,
+  decision/.style={base, diamond, aspect=2.2, fill=amarilloclaro, inner sep=0.6pt, text width=#1},
+  decision/.default=14mm,
+  conector/.style={base, circle, fill=white, minimum size=5.5mm, inner sep=0pt, font=\scriptsize\bfseries},
+  flecha/.style={->, draw=tinta, line width=0.55pt},
+  et/.style={font=\scriptsize, text=gris, inner sep=1.6pt},
+  panel/.style={draw=borde, fill=grisclaro, rounded corners=4pt, line width=0.5pt, inner sep=3mm},
+  paneltit/.style={font=\footnotesize\bfseries\sffamily, text=azul, anchor=north, align=center, inner sep=0pt},
+  acento/.style={fill=azul!15, draw=azul, line width=0.9pt},
+}
+
+\hypersetup{pdftitle={Informe técnico: mfshield\_mario}, pdfsubject={NUCLEO-L476RG + Multi-Function Shield}}
+
+% =====================================================================
+\begin{document}
+
+\begin{center}
+  {\sffamily\bfseries\LARGE\color{azul} Informe técnico: mfshield\_mario\par}
+  \vspace{5pt}
+  {\sffamily\large Tema de \emph{Super Mario Bros} en la Multi-Function Shield\\
+   con la NUCLEO-L476RG, programado en ensamblador ARM\par}
+  \vspace{7pt}
+  \ifx\autor\empty\else{\autor\par}\vspace{2pt}\fi
+  {\small\color{gris}7 de octubre de 2026\par}
+\end{center}
+\vspace{4pt}
+
+% =====================================================================
+\section{Resumen}
+
+\texttt{mfshield\_mario} es un programa en ensamblador ARM para la placa NUCLEO-L476RG que toca el tema
+principal de \emph{Super Mario Bros} con el zumbador de la Multi-Function Shield y muestra en el display
+de 7 segmentos la frecuencia, en hercios, de la nota que suena. No usa HAL ni interrupciones: escribe
+directamente en los registros de RCC, GPIOA, GPIOB y TIM2, y repite la canción sin fin.
+
+Dos decisiones explican casi todo el código:
+\begin{itemize}
+  \item \textbf{El tono lo genera el hardware.} TIM2 produce una onda cuadrada al 50\% en PB3. Cambiar de
+        nota es escribir dos registros (ARR y CCR2), y la CPU queda libre mientras la nota suena.
+  \item \textbf{El tiempo lo marca el display.} La duración de cada nota se cuenta en \emph{barridos} de los
+        cuatro dígitos, de unos 4,2\,ms cada uno; el refresco del display y el ritmo de la música salen
+        del mismo bucle.
+\end{itemize}
+
+\begin{table}[H]
+  \centering\small
+  \caption{Datos generales del proyecto.}
+  \label{tab:datos}
+  \begin{tabularx}{\textwidth}{@{}P{3.1cm} L@{}}
+    \toprule
+    Dato & Valor \\
+    \midrule
+    Placa         & NUCLEO-L476RG (STM32L476RG, Cortex-M4) con la Multi-Function Shield de Arduino \\
+    Lenguaje      & Ensamblador GNU, sintaxis unificada Thumb-2 (\texttt{Src/main.s}, 315 líneas) \\
+    Reloj         & MSI a 4\,MHz, el de arranque: el proyecto no define \texttt{SystemInit} \\
+    Periféricos   & RCC, GPIOA, GPIOB y TIM2 (canal 2 en modo PWM) \\
+    Canción       & 66 pasos (41 notas y 25 silencios); unos 12\,s por vuelta \\
+    Tamaño        & 1340 bytes de flash; 28 bytes de RAM más 1,5\,KB reservados para pila y heap \\
+    Herramientas  & GCC arm-none-eabi 14.3 (STM32CubeIDE 2.2.0), STM32CubeProgrammer, VS Code con Cortex-Debug \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Estructura del proyecto}
+
+Todo el comportamiento está en \texttt{Src/main.s}; el resto es el andamiaje de arranque, enlazado y
+compilación que genera STM32CubeIDE (tabla~\ref{tab:archivos}).
+
+\begin{table}[H]
+  \centering\small
+  \caption{Archivos del proyecto.}
+  \label{tab:archivos}
+  \begin{tabularx}{\textwidth}{@{}P{4.4cm} P{2.9cm} L@{}}
+    \toprule
+    Archivo & Qué es & Papel en el proyecto \\
+    \midrule
+    \texttt{Src/main.s} & Ensamblador propio & Programa completo: configuración, tono, display y partitura \\
+    \texttt{Startup/}\newline\texttt{startup\_stm32l476rgtx.s} & Ensamblador de CubeIDE &
+      Tabla de vectores y \texttt{Reset\_Handler}: pila, copia de \texttt{.data}, borrado de \texttt{.bss} y salto a \texttt{main} \\
+    \texttt{STM32L476RGTX\_FLASH.ld} & Script de enlazado &
+      Mapa de memoria: flash de 1\,MB en 0x08000000, RAM de 96\,KB en 0x20000000 y SRAM2 de 32\,KB \\
+    \texttt{Src/syscalls.c}\newline\texttt{Src/sysmem.c} & C de CubeIDE &
+      Llamadas al sistema de newlib (\texttt{\_write}, \texttt{\_sbrk}, \dots); el programa no las usa y el enlazador las descarta \\
+    \texttt{Makefile} & GNU Make &
+      \texttt{make} compila, \texttt{make flash} graba por SWD y \texttt{make clean} borra \texttt{build/} \\
+    \texttt{.vscode/*.json} & Configuración de VS Code &
+      Botones Compilar, Cargar y Limpiar, y depuración por ST-Link con Cortex-Debug \\
+    \texttt{build/} & Salida de compilación &
+      Objetos \texttt{.o}, \texttt{mario.elf} (el binario que se graba) y \texttt{mario.map} (mapa de memoria) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{Compilar, cargar y depurar.} En VS Code, los botones \emph{Compilar}, \emph{Cargar} y
+\emph{Limpiar} ejecutan \texttt{make}, \texttt{make flash} y \texttt{make clean}. \texttt{make flash} graba
+\texttt{build/mario.elf} por SWD con STM32\_\allowbreak Programmer\_\allowbreak CLI, lo verifica y reinicia la placa. La configuración
+\emph{Depurar Mario (ST-Link)} compila primero, carga el programa con el servidor GDB de ST-Link y se detiene
+en \texttt{main}. Las rutas de las herramientas en el \texttt{Makefile} y en \texttt{.vscode/launch.json}
+apuntan a \nolinkurl{/home/jmaster/st/stm32cubeide_2.2.0/}; en otro equipo hay que ajustarlas.
+
+% =====================================================================
+\section{Diagrama de flujo}
+
+El programa tiene dos niveles: \texttt{main} decide qué nota suena y durante cuánto tiempo
+(figura~\ref{fig:main}), y las subrutinas del display convierten ese tiempo en barridos de los cuatro
+dígitos (figura~\ref{fig:display}). Los diagramas usan los símbolos habituales:
+
+\begin{center}
+  \begin{tikzpicture}[desc/.style={font=\scriptsize, text=gris, align=center, text width=29mm, anchor=north}]
+    \node[terminal, minimum width=21mm] (s1) at (0,0) {Inicio / fin};
+    \node[proceso=19mm] (s2) at (3.3,0) {Proceso};
+    \node[decision=15mm] (s3) at (6.6,0) {¿Condición?};
+    \node[subrutina=19mm] (s4) at (9.9,0) {Subrutina};
+    \node[conector] (s5) at (13.2,0) {A};
+    \node[desc] at (0,-0.75)   {inicio o final\\ de una rutina};
+    \node[desc] at (3.3,-0.75) {instrucciones que se\\ ejecutan en orden};
+    \node[desc] at (6.6,-0.75) {salto condicional:\\ sigue por «sí» o por «no»};
+    \node[desc] at (9.9,-0.75) {llamada a una\\ subrutina (\texttt{bl})};
+    \node[desc] at (13.2,-0.75) {el flujo sigue en el\\ conector con la misma letra};
+  \end{tikzpicture}
+\end{center}
+
+\subsection{Programa principal}
+
+La figura~\ref{fig:main} sigue la ejecución desde el reset. \texttt{Reset\_Handler} prepara la pila y la
+memoria y salta a \texttt{main}, que configura relojes, pines y TIM2 una sola vez. Después, el bucle lee la
+partitura paso a paso: si la duración es 0 la canción terminó, y si la frecuencia es 0 el paso es un
+silencio. Cada paso termina con una pausa de unos 25\,ms; al final de la partitura hay 1,7\,s de silencio y
+la canción vuelve a empezar. La tabla~\ref{tab:paso} recorre las instrucciones de un paso.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=4.4mm]
+    % ---------------------------------------------------------- Columna izquierda: una sola vez
+    \node[terminal] (reset) at (0,0) {Reset de la placa};
+    \node[proceso=46mm, below=of reset] (rh)
+      {\textbf{\texttt{Reset\_Handler}} (startup)\\
+       SP $\leftarrow$ \texttt{\_estack}; copia \texttt{.data}\\
+       borra \texttt{.bss} y salta a \texttt{main}\\
+       sin \texttt{SystemInit}: MSI a 4\,MHz};
+    \node[proceso=46mm, below=of rh] (rcc)
+      {\textbf{Activar relojes}\lin{70--77}\\ RCC: GPIOA, GPIOB y TIM2};
+    \node[proceso=46mm, below=of rcc] (pines)
+      {\textbf{Configurar pines}\lin{79--99}\\ PA5--PA9, PB5 y PB6: salidas\\ PB3: AF1, salida de TIM2\_CH2};
+    \node[proceso=46mm, below=of pines] (ini)
+      {\textbf{Estado inicial}\lin{101--107}\\ LEDs apagados (1)\\ CLOCK = 0, LATCH = 1};
+    \node[proceso=46mm, below=of ini] (tim)
+      {\textbf{Configurar TIM2}\lin{109--119}\\ PWM modo 1 en el canal 2\\
+       PSC = 0 y \texttt{silencio()}\\ CEN = 1: arranca el contador};
+    \node[conector, below=of tim] (cA1) {A};
+
+    % ---------------------------------------------------------- Columna derecha: bucle sin fin
+    \node[conector] (cA2) at (6.75,0) {A};
+    \node[proceso=48mm, below=of cA2] (can)
+      {\textbf{\texttt{cancion}}\lin{121--122}\\ r8 $\leftarrow$ inicio de \texttt{partitura}};
+    \node[proceso=48mm, below=of can] (nota)
+      {\textbf{\texttt{nota}}\lin{123--127}\\ r9 $\leftarrow$ $f$ (frecuencia, Hz)\\ r10 $\leftarrow$ $d$ (duración, barridos)};
+    \node[decision, below=of nota] (d1) {¿$d=0$?};
+    \node[decision, below=6.5mm of d1] (d2) {¿$f=0$?};
+    \node[subrutina=48mm, below=of d2] (tono)
+      {\textbf{\texttt{tono}($f$)}\lin{131}\\ ARR = 4\,MHz/$f$ $-$ 1\\ CCR2 = ARR/2};
+    \node[subrutina=48mm, below=of tono, acento] (most)
+      {\textbf{\texttt{mostrar}($f$, $d$)}\lin{136--138}\\ la nota suena durante $d$ barridos\\ y el display muestra $f$};
+    \node[subrutina=48mm, below=of most] (pausa)
+      {\textbf{Pausa entre notas}\lin{140--144}\\ \texttt{silencio()} y \texttt{mostrar}($f$, 6)\\ $\approx$ 25\,ms; el display sigue en $f$};
+    \node[subrutina=33mm] (fin) at ($(d1)+(4.8,0)$)
+      {\textbf{\texttt{fin\_cancion}}\lin{146--151}\\ \texttt{silencio()}\\ \texttt{mostrar}(0, 400)\\ $\approx$ 1,7\,s de silencio};
+    \node[subrutina=33mm] (sil) at ($(d2)+(4.8,0)$)
+      {\textbf{\texttt{silencio()}}\lin{134}\\ CCR2 = 0xFFFFFFFF};
+
+    % ---------------------------------------------------------- Flechas
+    \foreach \a/\b in {reset/rh, rh/rcc, rcc/pines, pines/ini, ini/tim, tim/cA1,
+                       cA2/can, can/nota, nota/d1, tono/most, most/pausa}
+      \draw[flecha] (\a) -- (\b);
+    \draw[flecha] (d1) -- node[et, right=0.6mm] {no} (d2);
+    \draw[flecha] (d2) -- node[et, right=0.6mm] {no} (tono);
+    \draw[flecha] (d1) -- node[et, above=0.4mm] {sí} (fin);
+    \draw[flecha] (d2) -- node[et, above=0.4mm] {sí} (sil);
+    \draw[flecha] (sil) |- (most);
+    % siguiente paso (por la izquierda)
+    \coordinate (xL) at ($(tono.west)+(-5mm,0)$);
+    \coordinate (yB) at ($(pausa.south)+(0,-4.5mm)$);
+    \draw[flecha] (pausa.south) -- (yB) -| (xL |- nota.west) -- (nota.west);
+    \node[et, rotate=90, anchor=south] (lsig) at ($(xL |- d2.center)+(-0.4mm,0)$) {siguiente paso};
+    % repite la canción (por la derecha)
+    \draw[flecha] (fin) |- node[et, right=0.6mm, pos=0.3, align=left] (lrep) {repite\\ la canción} (can);
+
+    % ---------------------------------------------------------- Paneles
+    \coordinate (tL) at ($(reset.north)+(0,9mm)$);
+    \coordinate (tR) at ($(cA2.north)+(0,9mm)$);
+    \begin{scope}[on background layer]
+      \node[panel, fit=(tL)(reset)(rh)(rcc)(pines)(ini)(tim)(cA1)] (PL) {};
+      \node[panel, fit=(tR)(cA2)(can)(nota)(d1)(d2)(tono)(most)(pausa)(fin)(sil)(yB)(lsig)(lrep)] (PR) {};
+    \end{scope}
+    \node[paneltit] at ($(PL.north)+(0,-2.6mm)$) {Arranque y configuración\\[-1pt] {\mdseries\color{gris}se ejecuta una vez}};
+    \node[paneltit] at ($(PR.north)+(0,-2.6mm)$) {Bucle de la canción\\[-1pt] {\mdseries\color{gris}se repite sin fin}};
+  \end{tikzpicture}
+  \caption{Diagrama de flujo del programa principal. A la izquierda, lo que corre una sola vez tras el
+    reset; a la derecha, el bucle que recorre la partitura. El conector A une las dos columnas.
+    $f$ es la frecuencia del paso (r9) y $d$ su duración en barridos (r10). La caja resaltada es donde
+    suena cada nota. Entre corchetes, las líneas de \texttt{Src/main.s}.}
+  \label{fig:main}
+\end{figure}
+
+\begin{table}[H]
+  \centering\small
+  \caption{Un paso de la partitura, instrucción por instrucción.}
+  \label{tab:paso}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{@{}l >{\ttfamily\raggedright\arraybackslash}p{5.4cm} L@{}}
+    \toprule
+    Líneas & \normalfont Instrucciones & Qué hacen \\
+    \midrule
+    124--125 & ldrh r9, [r8], \#2\newline ldrh r10, [r8], \#2 & Leen la frecuencia y la duración del paso; r8 avanza 4 bytes \\
+    126--127 & cmp r10, \#0;\enspace beq fin\_cancion & Si la duración es 0, se acabó la partitura \\
+    129--130 & mov r0, r9\newline cbz r0, nota\_silencio & Si la frecuencia es 0, el paso es un silencio \\
+    131--134 & bl tono \normalfont(o \ttfamily bl silencio\normalfont) & Programa TIM2 con la frecuencia, o lo deja callado \\
+    136--138 & mov r0, r9;\enspace mov r1, r10\newline bl mostrar & La nota suena mientras el display muestra la frecuencia durante $d$ barridos \\
+    140--143 & bl silencio\newline mov r0, r9;\enspace movs r1, \#6\newline bl mostrar & Corta la nota y espera 6 barridos con la frecuencia todavía en el display \\
+    144      & b nota & Pasa al siguiente paso \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Subrutinas del display}
+
+La figura~\ref{fig:display} muestra cómo se dibuja un número en el display y cómo ese dibujo marca el tiempo.
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[node distance=4.4mm]
+    % ======================================================= (a) mostrar
+    \node[terminal] (m0) at (0,0) {\texttt{mostrar}(número, barridos)};
+    \node[proceso=44mm, below=of m0] (m1)
+      {\textbf{\texttt{barrido}}\lin{199--201}\\ r6 $\leftarrow$ número\\ pos $\leftarrow$ 0 (unidades)};
+    \node[decision=16mm, below=of m1] (m2) {¿pos $=0$ o\\ r6 $\neq 0$?};
+    \node[proceso=44mm, below=of m2] (m3)
+      {\textbf{Calcular la cifra}\lin{207--212}\\ cifra $\leftarrow$ r6 mod 10\\ r6 $\leftarrow$ r6 / 10\\
+       seg $\leftarrow$ \texttt{tabla\_segmentos}[cifra]};
+    \node[proceso=31mm, right=8mm of m2] (m3b)
+      {\textbf{Dígito apagado}\lin{215}\\ seg $\leftarrow$ 0xFF\\ (cero a la izquierda)};
+    \node[subrutina=44mm, below=of m3] (m4)
+      {\textbf{\texttt{escribir\_display}}\lin{217--219}\\ (seg, \texttt{tabla\_posicion}[pos])};
+    \node[subrutina=44mm, below=of m4] (m5)
+      {\textbf{\texttt{retardo}(1000)}\lin{221--222}\\ el dígito luce $\approx$ 1\,ms};
+    \node[proceso=44mm, below=of m5] (m6) {pos $\leftarrow$ pos $+$ 1\lin{224}};
+    \node[decision=15mm, below=of m6] (m7) {¿pos $<4$?};
+    \node[proceso=44mm, below=of m7] (m8) {barridos $\leftarrow$ barridos $-$ 1\lin{228}};
+    \node[decision=20mm, below=of m8] (m9) {¿barridos $\neq 0$?};
+    \node[terminal, below=of m9] (m10) {retorna\lin{230}};
+
+    \foreach \a/\b in {m0/m1, m1/m2, m3/m4, m4/m5, m5/m6, m6/m7, m8/m9}
+      \draw[flecha] (\a) -- (\b);
+    \draw[flecha] (m2) -- node[et, right=0.6mm] {sí} (m3);
+    \draw[flecha] (m2) -- node[et, above=0.4mm] {no} (m3b);
+    \draw[flecha] (m3b) |- (m4);
+    \draw[flecha] (m7) -- node[et, right=0.6mm] {no} (m8);
+    \draw[flecha] (m9) -- node[et, right=0.6mm] {no} (m10);
+    % bucles: siguiente dígito (interno) y otro barrido (externo)
+    \coordinate (xIn)  at ($(m3.west)+(-4.5mm,0)$);
+    \coordinate (xOut) at ($(m3.west)+(-9.5mm,0)$);
+    \draw[flecha] (m7.west) -- node[et, above=0.4mm, pos=0.5] {sí} (m7.west -| xIn) |- (m2.west);
+    \draw[flecha] (m9.west) -- node[et, above=0.4mm, pos=0.6] {sí} (m9.west -| xOut) |- (m1.west);
+    \node[et, rotate=90, anchor=south] (lIn)  at ($(xIn |- m5.center)+(-0.4mm,0)$) {siguiente dígito};
+    \node[et, rotate=90, anchor=south] (lOut) at ($(xOut |- m5.center)+(-0.4mm,0)$) {otro barrido};
+
+    \coordinate (tA) at ($(m0.north)+(0,9mm)$);
+    \begin{scope}[on background layer]
+      \node[panel, fit=(tA)(m0)(m1)(m2)(m3)(m3b)(m4)(m5)(m6)(m7)(m8)(m9)(m10)(lOut)] (PA) {};
+    \end{scope}
+    \node[paneltit] at ($(PA.north)+(0,-2.6mm)$) {(a) \texttt{mostrar}\\[-1pt] {\mdseries\color{gris}refresca el display y marca el tiempo}};
+
+    % ======================================================= (b) escribir_display
+    \def\xB{9.95}
+    \node[terminal] (e0) at (\xB,0) {\texttt{escribir\_display}(seg, dig)};
+    \node[proceso=42mm, below=of e0] (e1) {LATCH (PB5) $\leftarrow$ 0\lin{242--244}};
+    \node[subrutina=42mm, below=of e1] (e2)
+      {\texttt{enviar\_byte}(seg)\lin{245}\\ \texttt{enviar\_byte}(dig)\lin{246--247}};
+    \node[proceso=42mm, below=of e2] (e3)
+      {LATCH $\leftarrow$ 1\lin{248--250}\\ los 595 copian los 16 bits\\ a sus salidas a la vez};
+    \node[terminal, below=of e3] (e4) {retorna\lin{251}};
+    \foreach \a/\b in {e0/e1, e1/e2, e2/e3, e3/e4}
+      \draw[flecha] (\a) -- (\b);
+
+    % ======================================================= (c) enviar_byte
+    \node[terminal] (b0) at ($(e4.south)+(0,-21mm)$) {\texttt{enviar\_byte}(byte)};
+    \node[proceso=42mm, below=of b0] (b1) {i $\leftarrow$ 8\lin{261--262}};
+    \node[proceso=42mm, below=of b1] (b2) {DATA (PA9) $\leftarrow$ bit 7\lin{264--268}};
+    \node[proceso=42mm, below=of b2] (b3)
+      {un pulso en CLOCK\lin{269--272}\\ (PA8 a 1 y luego a 0)\\ el 595 lee DATA en la subida};
+    \node[proceso=42mm, below=of b3] (b4)
+      {byte $\leftarrow$ byte $\ll$ 1\lin{273}\\ i $\leftarrow$ i $-$ 1\lin{274}};
+    \node[decision=12mm, below=of b4] (b5) {¿i $\neq 0$?};
+    \node[terminal, below=of b5] (b6) {retorna\lin{276}};
+    \foreach \a/\b in {b0/b1, b1/b2, b2/b3, b3/b4, b4/b5}
+      \draw[flecha] (\a) -- (\b);
+    \draw[flecha] (b5) -- node[et, right=0.6mm] {no} (b6);
+    \coordinate (xC) at ($(b3.west)+(-4.5mm,0)$);
+    \draw[flecha] (b5.west) -- node[et, above=0.4mm, pos=0.55] {sí} (b5.west -| xC) |- (b2.west);
+    \node[et, rotate=90, anchor=south] (lC) at ($(xC |- b3.center)+(-0.4mm,0)$) {siguiente bit};
+
+    % paneles (b) y (c) con el mismo ancho
+    \coordinate (bcL) at ($(b3.west)+(-9mm,0)$);
+    \coordinate (bcR) at ($(e0.east)+(0.5mm,0)$);
+    \coordinate (tB) at ($(e0.north)+(0,9mm)$);
+    \coordinate (tC) at ($(b0.north)+(0,9mm)$);
+    \begin{scope}[on background layer]
+      \node[panel, fit=(tB)(e0)(e1)(e2)(e3)(e4)(bcL |- e2)(bcR |- e2)] (PB) {};
+      \node[panel, fit=(tC)(b0)(b1)(b2)(b3)(b4)(b5)(b6)(lC)(bcL |- b3)(bcR |- b3)] (PC) {};
+    \end{scope}
+    \node[paneltit] at ($(PB.north)+(0,-2.6mm)$) {(b) \texttt{escribir\_display}\\[-1pt] {\mdseries\color{gris}un dígito: dos bytes y un pulso}};
+    \node[paneltit] at ($(PC.north)+(0,-2.6mm)$) {(c) \texttt{enviar\_byte}\\[-1pt] {\mdseries\color{gris}8 bits, el más significativo primero}};
+  \end{tikzpicture}
+  \caption{Diagramas de flujo de las subrutinas del display. (a) \texttt{mostrar} enciende los cuatro dígitos
+    uno a uno y repite el recorrido tantas veces como barridos se le pidan; (b) \texttt{escribir\_display}
+    envía los dos bytes de un dígito y da el pulso de LATCH; (c) \texttt{enviar\_byte} saca un byte bit a bit.
+    pos es la posición del dígito (r4; 0 = unidades) y seg el patrón de segmentos. Entre corchetes, las
+    líneas de \texttt{Src/main.s}.}
+  \label{fig:display}
+\end{figure}
+
+\texttt{mostrar} recorre los cuatro dígitos de las unidades a los miles y repite ese recorrido tantas veces
+como indique su segundo argumento. En cada dígito calcula la cifra, o lo apaga si es un cero a la
+izquierda; luego envía 16 bits a los 74HC595 con \texttt{escribir\_display} y espera cerca de 1\,ms con
+\texttt{retardo}. Las unidades siempre se muestran, así que un silencio aparece como «0».
+
+% =====================================================================
+\section{Diagrama de conexiones}
+
+El programa usa ocho pines del STM32L476RG, y todos llegan a la shield por el conector Arduino de la
+NUCLEO-L476RG: uno va al zumbador, cuatro a los LEDs y tres a los dos registros de desplazamiento 74HC595
+que manejan el display (figura~\ref{fig:conexiones} y tabla~\ref{tab:pines}).
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}[
+      pin/.style={draw=tinta, fill=white, font=\scriptsize\ttfamily, minimum width=10mm,
+                  minimum height=4.6mm, inner sep=1pt, line width=0.5pt},
+      hdr/.style={pin, fill=amarilloclaro},
+      bloque/.style={draw=tinta, fill=white, rounded corners=2pt, font=\scriptsize, align=center,
+                     line width=0.55pt, inner sep=2.6pt},
+      cable/.style={line width=0.85pt},
+      fila/.style={font=\scriptsize, anchor=west, inner sep=1pt},
+      desc/.style={font=\scriptsize, align=left, anchor=west, inner sep=1pt},
+    ]
+    % ---------------------------------------------------------- filas y columnas
+    \def\yB{-1.75}
+    \def\yLa{-3.0}  \def\yLb{-3.6}  \def\yLc{-4.2}  \def\yLd{-4.8}
+    \def\yDa{-6.05} \def\yDb{-6.65} \def\yDc{-7.25}
+    \def\xBlk{1.45} \def\xPin{4.3}  \def\xHdr{6.85} \def\xCmp{9.35}
+
+    % ---------------------------------------------------------- STM32L476RG
+    \node[bloque, text width=25mm, minimum height=12mm] (tim2) at (\xBlk,\yB)
+      {\textbf{TIM2}, canal 2\\ PWM modo 1\\ cuenta a 4\,MHz};
+    \node[bloque, text width=25mm, minimum height=50mm] (gpio) at (\xBlk,{(\yLa+\yDc)/2})
+      {\textbf{GPIOA y GPIOB}\\[3pt] salidas push-pull\\[3pt] se escriben con BSRR};
+    \foreach \n/\y in {PB3/\yB, PA5/\yLa, PA6/\yLb, PA7/\yLc, PB6/\yLd, PB5/\yDa, PA8/\yDb, PA9/\yDc}
+      \node[pin] (p\n) at (\xPin,\y) {\n};
+
+    % ---------------------------------------------------------- Conector Arduino
+    \foreach \n/\y in {D3/\yB, D13/\yLa, D12/\yLb, D11/\yLc, D10/\yLd, D4/\yDa, D7/\yDb, D8/\yDc}
+      \node[hdr] (h\n) at (\xHdr,\y) {\n};
+
+    % ---------------------------------------------------------- Multi-Function Shield
+    \node[bloque, text width=55mm, minimum width=58mm, minimum height=12mm, anchor=west] (buz) at (\xCmp,\yB)
+      {\textbf{Zumbador}\\ activo en bajo: suena cuando D3 $=0$\\ y calla con D3 fijo en 1};
+    \node[bloque, minimum width=58mm, minimum height=24mm, anchor=north west] (leds) at (\xCmp,{\yLa+0.3}) {};
+    \foreach \t/\y in {D1/\yLa, D2/\yLb, D3/\yLc, D4/\yLd}
+      \node[fila] at ($(\xCmp,\y)+(2.5mm,0)$) {LED \t};
+    \node[desc] at ($(\xCmp,{(\yLa+\yLd)/2})+(22mm,0)$)
+      {\textbf{4 LEDs}, activos en bajo\\ el programa los deja\\ siempre apagados (1)};
+    \node[bloque, minimum width=58mm, minimum height=18mm, anchor=north west] (sr) at (\xCmp,{\yDa+0.3}) {};
+    \node[fila] at ($(\xCmp,\yDa)+(2.5mm,0)$) {ST\_CP $\cdot$ LATCH};
+    \node[fila] at ($(\xCmp,\yDb)+(2.5mm,0)$) {SH\_CP $\cdot$ CLOCK};
+    \node[fila] at ($(\xCmp,\yDc)+(2.5mm,0)$) {DS $\cdot$ DATA};
+    \node[desc] at ($(\xCmp,\yDb)+(30mm,0)$)
+      {\textbf{2 $\times$ 74HC595}\\ en cadena:\\ 16 bits por dígito};
+    \node[bloque, text width=55mm, minimum width=58mm, minimum height=12mm, anchor=north west] (disp)
+      at ($(sr.south west)+(0,-9mm)$)
+      {\textbf{Display de 4 dígitos}\\ 7 segmentos, ánodo común\\ muestra la frecuencia de la nota en Hz};
+    \draw[flecha, azul, line width=0.85pt] (sr.south) -- node[et, right=0.6mm, align=left]
+      {segmentos y\\ selección de dígito} (disp.north);
+
+    % ---------------------------------------------------------- Cables
+    % zumbador
+    \draw[cable, naranja] (tim2.east) -- node[et, above=0.3mm] {AF1} (pPB3.west);
+    \draw[cable, naranja] (pPB3.east) -- (hD3.west);
+    \draw[cable, naranja, ->] (hD3.east) -- node[et, above=0.3mm] {PWM} (buz.west |- hD3);
+    % LEDs
+    \foreach \p/\h in {PA5/D13, PA6/D12, PA7/D11, PB6/D10} {
+      \draw[cable, rojo] (gpio.east |- p\p) -- (p\p.west);
+      \draw[cable, rojo] (p\p.east) -- (h\h.west);
+      \draw[cable, rojo, ->] (h\h.east) -- (leds.west |- h\h);
+    }
+    % display
+    \foreach \p/\h in {PB5/D4, PA8/D7, PA9/D8} {
+      \draw[cable, azul] (gpio.east |- p\p) -- (p\p.west);
+      \draw[cable, azul] (p\p.east) -- (h\h.west);
+      \draw[cable, azul, ->] (h\h.east) -- (sr.west |- h\h);
+    }
+
+    % ---------------------------------------------------------- Paneles y títulos
+    \coordinate (tM) at ($(tim2.north)+(0,9mm)$);
+    \coordinate (tS) at ($(buz.north)+(0,9mm)$);
+    \begin{scope}[on background layer]
+      \node[panel, fit=(tM)(tim2)(gpio)(pPB3)(pPA9)] (PM) {};
+      \node[panel, fit=(tS)(buz)(leds)(sr)(disp)] (PS) {};
+    \end{scope}
+    \node[paneltit] at ($(PM.north)+(0,-2.6mm)$) {NUCLEO-L476RG\\[-1pt] {\mdseries\color{gris}microcontrolador STM32L476RG}};
+    \node[paneltit] at ($(PS.north)+(0,-2.6mm)$) {Multi-Function Shield\\[-1pt] {\mdseries\color{gris}enchufada sobre el conector Arduino}};
+    \node[paneltit, text=tinta] at ($(hD3 |- PM.north)+(0,-2.6mm)$) {Conector\\[-1pt] Arduino};
+  \end{tikzpicture}
+  \caption{Diagrama de conexiones. Cada señal sale de un periférico del STM32L476RG, pasa por su pin
+    (PB3, PA5\dots) y llega al conector Arduino de la NUCLEO-L476RG (D3, D13\dots), donde la shield la recibe.
+    Colores: naranja, zumbador; rojo, LEDs; azul, display. Todas las señales son salidas del microcontrolador.}
+  \label{fig:conexiones}
+\end{figure}
+
+\begin{table}[H]
+  \centering\footnotesize
+  \caption{Pines que usa el programa.}
+  \label{tab:pines}
+  \begin{tabularx}{\textwidth}{@{}l l l l L@{}}
+    \toprule
+    STM32 & Arduino & Modo del pin & Elemento de la shield & Uso en el programa \\
+    \midrule
+    PB3 & D3  & AF1 (TIM2\_CH2) & Zumbador, activo en bajo & Onda cuadrada de la nota; 1 fijo en los silencios \\
+    PA5 & D13 & Salida & LED D1, activo en bajo & Apagado (1); también enciende LD2 de la NUCLEO \\
+    PA6 & D12 & Salida & LED D2, activo en bajo & Apagado (1) \\
+    PA7 & D11 & Salida & LED D3, activo en bajo & Apagado (1) \\
+    PB6 & D10 & Salida & LED D4, activo en bajo & Apagado (1) \\
+    PB5 & D4  & Salida & 74HC595: ST\_CP (LATCH) & 0 al enviar; al subir, el dígito se muestra \\
+    PA8 & D7  & Salida & 74HC595: SH\_CP (CLOCK) & Un pulso por bit; el 595 lee DATA al subir \\
+    PA9 & D8  & Salida & 74HC595: DS (DATA) & Bit que se envía, el más significativo primero \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Los dos 74HC595 comparten CLOCK y LATCH y están en cadena: tras 16 pulsos de reloj, el primer byte enviado
+(los segmentos) queda en el segundo registro y el segundo byte (la selección de dígito) en el primero. El
+flanco de subida de LATCH copia los 16 bits a las salidas a la vez, así que el display nunca muestra un dato
+a medio enviar.
+
+% =====================================================================
+\section{Explicación del código}
+
+\subsection{Rutinas}
+
+\texttt{Src/main.s} tiene una rutina principal y seis subrutinas (tabla~\ref{tab:rutinas} y
+figura~\ref{fig:llamadas}). Solo \texttt{mostrar} y \texttt{escribir\_display} usan la pila, para guardar los
+registros que reutilizan; \texttt{main} lleva su estado en r8, r9 y r10, que ninguna subrutina modifica.
+
+\begin{table}[H]
+  \centering\small
+  \caption{Rutinas de \texttt{Src/main.s}.}
+  \label{tab:rutinas}
+  \begin{tabularx}{\textwidth}{@{}>{\ttfamily}l l P{3.4cm} L@{}}
+    \toprule
+    \normalfont Rutina & Líneas & Entradas & Qué hace \\
+    \midrule
+    main             & 68--151  & ---                          & Configura RCC, GPIO y TIM2; recorre la partitura sin fin \\
+    tono             & 160--170 & r0 = frecuencia (Hz)         & ARR $\leftarrow$ 4\,000\,000/$f-1$; CCR2 $\leftarrow$ ARR/2; UG para aplicarlos ya \\
+    silencio         & 180--186 & ---                          & CCR2 $\leftarrow$ 0xFFFFFFFF: la salida PWM queda fija en 1 \\
+    mostrar          & 195--230 & r0 = número (0--9999)\newline r1 = barridos & Enciende los 4 dígitos uno a uno, r1 veces, sin ceros a la izquierda \\
+    escribir\_display & 239--251 & r0 = segmentos\newline r1 = selección de dígito & LATCH $\leftarrow$ 0, envía los dos bytes y LATCH $\leftarrow$ 1 \\
+    enviar\_byte      & 260--276 & r0 = byte                    & Saca 8 bits por PA9, el más significativo primero, con un pulso en PA8 por bit \\
+    retardo          & 284--287 & r0 = número de vueltas       & Espera activa: resta 1 hasta llegar a 0 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[!htbp]
+  \centering
+  \begin{tikzpicture}[
+      rut/.style={draw=tinta, fill=azulclaro, rounded corners=2pt, align=center, font=\footnotesize,
+                  inner sep=3pt, minimum width=27mm, minimum height=10mm, line width=0.55pt},
+      llama/.style={->, draw=tinta, line width=0.55pt},
+      nota/.style={font=\scriptsize, text=gris},
+    ]
+    \node[rut, fill=verdeclaro] (main) at (0,0)
+      {\texttt{\textbf{main}}\\ {\scriptsize\color{gris}configura RCC, GPIO y TIM2}};
+    \node[rut] (tono) at (-5.0,-2.0) {\texttt{tono}\\ {\scriptsize\color{gris}TIM2: ARR, CCR2, EGR}};
+    \node[rut] (sil)  at (-1.6,-2.0) {\texttt{silencio}\\ {\scriptsize\color{gris}TIM2: CCR2, EGR}};
+    \node[rut] (most) at (2.9,-2.0)  {\texttt{mostrar}\\ {\scriptsize\color{gris}4 dígitos por barrido}};
+    \node[rut] (esc)  at (1.15,-4.0) {\texttt{escribir\_display}\\ {\scriptsize\color{gris}GPIOB: LATCH (PB5)}};
+    \node[rut] (ret)  at (4.65,-4.0) {\texttt{retardo}\\ {\scriptsize\color{gris}espera activa}};
+    \node[rut] (env)  at (1.15,-6.0) {\texttt{enviar\_byte}\\ {\scriptsize\color{gris}GPIOA: CLOCK (PA8), DATA (PA9)}};
+
+    \coordinate (j0) at ($(main.south)+(0,-4.5mm)$);
+    \draw[line width=0.55pt, draw=tinta] (main.south) -- (j0);
+    \draw[llama] (j0) -| (tono.north);
+    \draw[llama] (j0) -| (sil.north);
+    \draw[llama] (j0) -| (most.north);
+    \coordinate (j1) at ($(most.south)+(0,-4.5mm)$);
+    \draw[line width=0.55pt, draw=tinta] (most.south) -- (j1);
+    \draw[llama] (j1) -| (esc.north);
+    \draw[llama] (j1) -| (ret.north);
+    \draw[llama] (esc) -- node[nota, right] {2 veces por dígito} (env);
+    \node[nota, anchor=south west] at ($(tono.north)+(1mm,1mm)$) {1 llamada};
+    \node[nota, anchor=south west] at ($(sil.north)+(1mm,1mm)$) {4 llamadas};
+    \node[nota, anchor=south west] at ($(most.north)+(1mm,1mm)$) {3 llamadas};
+  \end{tikzpicture}
+  \caption{Jerarquía de llamadas: qué rutina llama a cuál y qué periférico escribe cada una. Las notas sobre
+    las flechas de \texttt{main} cuentan las instrucciones \texttt{bl} que hay en su código.}
+  \label{fig:llamadas}
+\end{figure}
+
+\subsection{Configuración de periféricos}
+
+\texttt{main} escribe los registros de la tabla~\ref{tab:registros}. En RCC y en los registros de modo de
+los GPIO usa secuencias de leer, modificar y escribir (\texttt{ldr}, \texttt{bic}/\texttt{orr},
+\texttt{str}), así que solo cambia los bits que necesita; los registros de TIM2 los escribe completos. Para
+mover los pines usa BSRR: un 1 en los bits 0--15 pone el pin en 1 y un 1 en los bits 16--31 lo pone en 0,
+sin tocar el resto del puerto.
+
+\begin{table}[H]
+  \centering\footnotesize
+  \caption{Registros que escribe el programa (direcciones del manual de referencia RM0351).}
+  \label{tab:registros}
+  \begin{tabularx}{\textwidth}{@{}l >{\ttfamily}l l L l@{}}
+    \toprule
+    Registro & \normalfont Dirección & Bits escritos & Efecto & Líneas \\
+    \midrule
+    RCC\_AHB2ENR   & 0x4002104C & GPIOAEN = GPIOBEN = 1 & Reloj de GPIOA y GPIOB & 71--74 \\
+    RCC\_APB1ENR1  & 0x40021058 & TIM2EN = 1 & Reloj de TIM2 & 75--77 \\
+    GPIOA\_MODER   & 0x48000000 & MODE5--MODE9 = 01 & PA5 a PA9 como salidas & 80--86 \\
+    GPIOB\_MODER   & 0x48000400 & MODE5, 6 = 01; MODE3 = 10 & PB5, PB6 salidas; PB3 en función alterna & 89--95 \\
+    GPIOB\_AFRL    & 0x48000420 & AFSEL3 = 0001 & PB3 conectado a TIM2\_CH2 (AF1) & 96--99 \\
+    GPIOx\_BSRR    & base + 0x18 & BS (0--15), BR (16--31) & Sube o baja pines sin tocar los demás & 102--107, etc. \\
+    TIM2\_PSC      & 0x40000028 & 0 & El contador avanza a 4\,MHz & 111--112 \\
+    TIM2\_CCMR1    & 0x40000018 & OC2M = 110, OC2PE = 1 & Canal 2 en PWM modo 1, con precarga de CCR2 & 113--114 \\
+    TIM2\_CCER     & 0x40000020 & CC2E = 1 & Habilita la salida del canal 2 & 115--116 \\
+    TIM2\_CR1      & 0x40000000 & ARPE = 1, CEN = 1 & Precarga de ARR y arranque del contador & 118--119 \\
+    TIM2\_ARR      & 0x4000002C & periodo & Fija la frecuencia de la nota & 165 \\
+    TIM2\_CCR2     & 0x40000038 & ancho del pulso & Fija el ciclo de trabajo (o el silencio) & 167, 183 \\
+    TIM2\_EGR      & 0x40000014 & UG = 1 & Aplica ARR y CCR2 de inmediato & 169, 185 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Generación del tono}
+
+TIM2 cuenta a 4\,MHz (PSC $=0$) desde 0 hasta ARR y vuelve a empezar. En PWM modo~1, la salida vale 1
+mientras el contador es menor que CCR2 y 0 el resto del periodo. Por eso:
+\begin{align}
+  f_{\text{tono}} &= \frac{f_{\text{reloj}}}{(\mathrm{PSC}+1)(\mathrm{ARR}+1)} = \frac{4\,000\,000~\text{Hz}}{\mathrm{ARR}+1}
+  \label{eq:ftono}\\[4pt]
+  \mathrm{ARR} &= \left\lfloor \frac{4\,000\,000}{f} \right\rfloor - 1,
+  \qquad
+  \mathrm{CCR2} = \left\lfloor \frac{\mathrm{ARR}}{2} \right\rfloor
+  \quad (\text{ciclo de trabajo del 50\%})
+  \label{eq:arr}
+\end{align}
+
+\texttt{tono} calcula ARR con \texttt{udiv} (división entera) y CCR2 con un desplazamiento a la derecha;
+luego pone UG en TIM2\_EGR para que los valores nuevos, que están en precarga, se apliquen de inmediato.
+\texttt{silencio} escribe CCR2 = 0xFFFFFFFF: como ARR siempre es menor, el contador de 32 bits nunca
+alcanza ese valor, la salida queda fija en 1 y el zumbador, que es activo en bajo, calla. La tabla~\ref{tab:notas} muestra los valores
+de cada nota; suponiendo que el MSI oscila exactamente a 4\,MHz, el error por redondeo es menor que 0,6\,Hz.
+
+\begin{table}[tbp]
+  \centering\small
+  \caption{Notas de la partitura y valores que carga \texttt{tono}.}
+  \label{tab:notas}
+  \begin{tabular}{@{}>{\ttfamily}l l r r r r r@{}}
+    \toprule
+    \normalfont Constante & Nota & $f$ (Hz) & ARR & CCR2 & $f$ real (Hz) & Veces \\
+    \midrule
+    MI5  & Mi5 (E5)            &  659 & 6068 & 3034 &  659,09 & 2 \\
+    SOL5 & Sol5 (G5)           &  784 & 5101 & 2550 &  784,01 & 5 \\
+    LA5  & La5 (A5)            &  880 & 4544 & 2272 &  880,09 & 4 \\
+    LAS5 & La$\sharp$5 (A$\sharp$5) & 932 & 4290 & 2145 & 932,18 & 2 \\
+    SI5  & Si5 (B5)            &  988 & 4047 & 2023 &  988,14 & 4 \\
+    DO6  & Do6 (C6)            & 1047 & 3819 & 1909 & 1047,12 & 5 \\
+    RE6  & Re6 (D6)            & 1175 & 3403 & 1701 & 1175,09 & 2 \\
+    MI6  & Mi6 (E6)            & 1319 & 3031 & 1515 & 1319,26 & 8 \\
+    FA6  & Fa6 (F6)            & 1397 & 2862 & 1431 & 1397,14 & 2 \\
+    SOL6 & Sol6 (G6)           & 1568 & 2550 & 1275 & 1568,01 & 5 \\
+    LA6  & La6 (A6)            & 1760 & 2271 & 1135 & 1760,56 & 2 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Temporización y partitura}
+
+No hay un temporizador para la duración de las notas: el tiempo se cuenta en barridos del display. Un
+barrido enciende los cuatro dígitos, cada uno durante \texttt{retardo(1000)}, y según los comentarios del
+código dura unos 4,2\,ms. Las duraciones de la tabla~\ref{tab:tiempos} son, por tanto, aproximadas: dependen
+de los ciclos que tarda la CPU en cada vuelta de los bucles.
+
+\begin{table}[H]
+  \centering\small
+  \caption{Constantes de tiempo (duraciones estimadas con 4,2\,ms por barrido).}
+  \label{tab:tiempos}
+  \begin{tabular}{@{}>{\ttfamily}l r l l@{}}
+    \toprule
+    \normalfont Constante & Valor & Duración & Para qué sirve \\
+    \midrule
+    DELAY\_DIGITO & 1000 vueltas & $\approx$ 1\,ms & Tiempo que luce cada dígito \\
+    \normalfont(un barrido) & 4 dígitos & $\approx$ 4,2\,ms & Unidad de tiempo de la canción \\
+    T            & 26 barridos  & $\approx$ 0,11\,s & Nota o silencio básico (2T y 3T para silencios largos) \\
+    T3           & 35 barridos  & $\approx$ 0,15\,s & Notas del tresillo (Sol5, Mi6, Sol6) \\
+    PAUSA\_NOTAS & 6 barridos   & $\approx$ 25\,ms  & Silencio que separa una nota de la siguiente \\
+    PAUSA\_FINAL & 400 barridos & $\approx$ 1,7\,s  & Silencio antes de repetir la canción \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+La partitura es una lista de pasos de 4 bytes: dos medias palabras (\texttt{.hword}) con la frecuencia en Hz
+(0 = silencio) y la duración en barridos (0 = fin). Así empieza la introducción:
+
+\begin{lstlisting}[numbers=none, frame=none, xleftmargin=1.2em]
+.hword MI6, T,  MI6, T,  SIL, T,  MI6, T,  SIL, T,  DO6, T,  MI6, T,  SIL, T
+\end{lstlisting}
+
+La introducción tiene 12 pasos y la melodía 27, que se tocan dos veces gracias a \texttt{.rept 2}: en total
+son 66 pasos (41 notas y 25 silencios) que ocupan 268 bytes con el par final \texttt{0, 0}. Una vuelta
+completa suma 2878 barridos, unos 12\,s: el 72\% se va en notas y silencios, el 14\% en las pausas entre
+notas y el 14\% restante en la pausa final.
+
+\subsection{Display multiplexado}
+
+El display es de ánodo común, así que un segmento se enciende con 0. Cada dígito se dibuja con dos bytes:
+el patrón de segmentos, con los bits en el orden dp\,g\,f\,e\,d\,c\,b\,a, y la selección de posición, que
+tiene en 1 un solo bit entre el 0 y el 3 (tabla~\ref{tab:segmentos}). Por ejemplo, 0xC0 = 1100\,0000
+enciende los segmentos a--f y deja apagados g y el punto: es el «0».
+
+\begin{table}[H]
+  \centering\small
+  \caption{Tablas del display en \texttt{.rodata}: \texttt{tabla\_segmentos} (arriba) y \texttt{tabla\_posicion} (abajo).}
+  \label{tab:segmentos}
+  \begin{tabular}{@{}l *{10}{c}@{}}
+    \toprule
+    Cifra  & 0 & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 \\
+    \midrule
+    Código & C0 & F9 & A4 & B0 & 99 & 92 & 82 & F8 & 80 & 90 \\
+    \bottomrule
+  \end{tabular}\par\medskip
+  \begin{tabular}{@{}l c c c c@{}}
+    \toprule
+    Posición & 0 & 1 & 2 & 3 \\
+    \midrule
+    Byte     & F8 & F4 & F2 & F1 \\
+    Dígito   & unidades & decenas & centenas & miles \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Con unos 240 barridos por segundo, cada dígito luce un cuarto del tiempo y el ojo ve los cuatro encendidos,
+sin parpadeo. Las posiciones sin cifras quedan apagadas (0xFF): con \textvisiblespace{} como dígito apagado,
+659\,Hz se ve como \texttt{\textvisiblespace659} y un silencio como
+\texttt{\textvisiblespace\textvisiblespace\textvisiblespace0}. Entre una nota y la siguiente, durante la pausa de 25\,ms, el display sigue
+mostrando la frecuencia de la nota anterior.
+
+% =====================================================================
+\section{Observaciones y posibles mejoras}
+
+\begin{itemize}
+  \item \textbf{Tono y ritmo dependen del reloj.} Si se activa el PLL u otro reloj, hay que cambiar
+        \texttt{F\_RELOJ} y recalibrar \texttt{DELAY\_DIGITO}; si no, la música sonará desafinada y a otro
+        tempo. Medir PB3 y PB5 con un osciloscopio confirmaría las duraciones estimadas.
+  \item \textbf{\texttt{main} depende de un efecto lateral.} En las líneas 117--119, \texttt{main} usa r2
+        después de \texttt{bl silencio} para escribir TIM2\_CR1. Funciona porque \texttt{silencio} deja
+        r2 = TIM2\_BASE, pero el AAPCS no garantiza r2 tras una llamada; recargarlo antes de esa escritura
+        hace el código más robusto.
+  \item \textbf{PA5 también enciende LD2.} El LED verde LD2 de la NUCLEO-L476RG está en PA5 (D13) y se
+        enciende en alto: al apagar el LED D1 de la shield (PA5 = 1), LD2 queda encendido.
+  \item \textbf{PB3 es la línea SWO del depurador.} Usarla como TIM2\_CH2 impide la traza SWO, aunque la
+        depuración por SWD (PA13 y PA14) sigue funcionando.
+  \item \textbf{La FPU queda apagada.} Como no hay \texttt{SystemInit}, nada la activa en el registro CPACR.
+        Hoy no importa, porque el programa no usa coma flotante; pero código en C con \texttt{float},
+        compilado con \texttt{-mfloat-abi=hard}, provocaría un HardFault y se quedaría en el bucle de
+        \texttt{Default\_Handler}.
+  \item \textbf{Hardware sin usar.} Los LEDs D1--D4 se configuran pero siempre están apagados, y los
+        pulsadores S1--S3 (A1--A3) y el potenciómetro (A0) de la shield no se leen. Encender un LED por
+        nota o ajustar el tempo con el potenciómetro serían extensiones naturales.
+  \item \textbf{Archivos sobrantes.} \texttt{syscalls.c} y \texttt{sysmem.c} no aportan código al binario
+        (el enlazador los descarta con \texttt{-{}-gc-sections}); pueden quitarse del \texttt{Makefile}.
+\end{itemize}
+
+% =====================================================================
+\appendix
+\section{Código fuente de \texttt{Src/main.s}}
+
+\begin{lstlisting}[firstnumber=1]
+/*
+ * main.s
+ *
+ * Multi-Function Shield sobre NUCLEO-L476RG
+ *  - Reproduce el tema principal de Super Mario Bros con el zumbador
+ *  - El display de 7 segmentos muestra la frecuencia (Hz) de la nota que suena
+ *
+ * El tono lo genera el TIM2 por hardware (PWM al 50 %):
+ *   ARR  = 4 000 000 / frecuencia - 1   (reloj MSI de 4 MHz, sin prescaler)
+ *   CCR2 = ARR / 2
+ *
+ * Conexiones de la shield (Arduino -> Nucleo):
+ *   ZUMBADOR      = D3  = PB3  (TIM2_CH2, AF1; activo en bajo)
+ *   LED D1..D4    = D13, D12, D11, D10 = PA5, PA6, PA7, PB6 (activos en bajo)
+ *   74HC595 LATCH = D4 = PB5
+ *   74HC595 CLOCK = D7 = PA8
+ *   74HC595 DATA  = D8 = PA9
+ */
+
+.syntax unified
+
+.global main
+
+.equ	RCC_BASE,		0x40021000
+.equ	RCC_AHB2ENR,	0x4C		// reloj de GPIOA/GPIOB (RM0351, page 251)
+.equ	RCC_APB1ENR1,	0x58		// reloj de TIM2 (RM0351, page 255)
+
+.equ	GPIOA_BASE,		0x48000000	// GPIO BASE ADDRESS (RM0351, page 78)
+.equ	GPIOB_BASE,		0x48000400
+.equ	GPIO_MODER,		0x00		// GPIO port mode register (RM0351, page 303)
+.equ	GPIO_BSRR,		0x18		// bits 0-15 ponen el pin en 1, bits 16-31 en 0
+.equ	GPIO_AFRL,		0x20		// funcion alterna de los pines 0..7 (RM0351, page 307)
+
+.equ	TIM2_BASE,		0x40000000	// (RM0351, page 1033 en adelante)
+.equ	TIM_CR1,		0x00
+.equ	TIM_EGR,		0x14
+.equ	TIM_CCMR1,		0x18
+.equ	TIM_CCER,		0x20
+.equ	TIM_PSC,		0x28
+.equ	TIM_ARR,		0x2C
+.equ	TIM_CCR2,		0x38
+
+.equ	F_RELOJ,		4000000		// MSI a 4 MHz (valor de arranque)
+.equ	DELAY_DIGITO,	1000		// ~1 ms encendido por digito del display
+.equ	PAUSA_NOTAS,	6			// silencio corto entre notas (barridos)
+.equ	PAUSA_FINAL,	400			// silencio antes de repetir la cancion
+
+// Duracion en barridos del display (cada barrido dura ~4.2 ms)
+.equ	T,				26			// tiempo basico ~0.11 s
+.equ	T3,				35			// nota de tresillo ~0.15 s
+
+// Frecuencias de las notas (Hz)
+.equ	MI5,	659
+.equ	SOL5,	784
+.equ	LA5,	880
+.equ	LAS5,	932			// La sostenido
+.equ	SI5,	988
+.equ	DO6,	1047
+.equ	RE6,	1175
+.equ	MI6,	1319
+.equ	FA6,	1397
+.equ	SOL6,	1568
+.equ	LA6,	1760
+.equ	SIL,	0			// silencio
+
+.section .text.main
+.type	main,%function
+main:
+
+// ACTIVAR RELOJ DE GPIOA, GPIOB Y TIM2
+	ldr r2, =RCC_BASE
+	ldr r1, [r2, #RCC_AHB2ENR]
+	orr r1, #0x3				// GPIOA y GPIOB
+	str r1, [r2, #RCC_AHB2ENR]
+	ldr r1, [r2, #RCC_APB1ENR1]
+	orr r1, #0x1				// TIM2
+	str r1, [r2, #RCC_APB1ENR1]
+
+// PA5..PA9 COMO SALIDA (01): bits 10..19 de MODER
+	ldr r2, =GPIOA_BASE
+	ldr r1, [r2, #GPIO_MODER]
+	ldr r3, =(0x3FF << 10)
+	bic r1, r3
+	ldr r3, =(0x155 << 10)
+	orr r1, r3
+	str r1, [r2, #GPIO_MODER]
+
+// PB5, PB6 COMO SALIDA (01) Y PB3 COMO FUNCION ALTERNA (10)
+	ldr r2, =GPIOB_BASE
+	ldr r1, [r2, #GPIO_MODER]
+	bic r1, #(0xF << 10)
+	orr r1, #(0x5 << 10)
+	bic r1, #(0x3 << 6)
+	orr r1, #(0x2 << 6)
+	str r1, [r2, #GPIO_MODER]
+	ldr r1, [r2, #GPIO_AFRL]	// PB3 -> AF1 (TIM2_CH2)
+	bic r1, #(0xF << 12)
+	orr r1, #(0x1 << 12)
+	str r1, [r2, #GPIO_AFRL]
+
+// ESTADO INICIAL: LEDs apagados (1), CLOCK en 0, LATCH en 1
+	ldr r2, =GPIOA_BASE
+	ldr r1, =((0x7 << 5) | (1 << (8+16)))
+	str r1, [r2, #GPIO_BSRR]
+	ldr r2, =GPIOB_BASE
+	ldr r1, =((1 << 6) | (1 << 5))
+	str r1, [r2, #GPIO_BSRR]
+
+// TIM2 EN MODO PWM 1 POR EL CANAL 2
+	ldr r2, =TIM2_BASE
+	movs r1, #0
+	str r1, [r2, #TIM_PSC]		// sin prescaler: cuenta a 4 MHz
+	ldr r1, =((6 << 12) | (1 << 11))
+	str r1, [r2, #TIM_CCMR1]	// OC2M = 110 (PWM 1), OC2PE = 1
+	movs r1, #(1 << 4)
+	str r1, [r2, #TIM_CCER]		// CC2E = 1: habilita la salida del canal 2
+	bl silencio
+	movs r1, #((1 << 7) | 1)
+	str r1, [r2, #TIM_CR1]		// ARPE = 1, CEN = 1: arranca el timer
+
+cancion:
+	ldr r8, =partitura
+nota:
+	ldrh r9, [r8], #2			// r9 = frecuencia (Hz), 0 = silencio
+	ldrh r10, [r8], #2			// r10 = duracion (barridos), 0 = fin
+	cmp r10, #0
+	beq fin_cancion
+
+	mov r0, r9
+	cbz r0, nota_silencio
+	bl tono
+	b nota_sonar
+nota_silencio:
+	bl silencio
+nota_sonar:
+	mov r0, r9
+	mov r1, r10
+	bl mostrar					// muestra la frecuencia mientras suena
+
+	bl silencio					// separa una nota de la siguiente
+	mov r0, r9
+	movs r1, #PAUSA_NOTAS
+	bl mostrar
+	b nota
+
+fin_cancion:
+	bl silencio
+	movs r0, #0
+	ldr r1, =PAUSA_FINAL
+	bl mostrar
+	b cancion
+.size	main, .-main
+
+
+/*
+ * tono: r0 = frecuencia en Hz
+ * Programa el periodo del TIM2 y deja el ciclo de trabajo en 50 %.
+ */
+.type	tono,%function
+tono:
+	ldr r1, =F_RELOJ
+	udiv r1, r1, r0
+	subs r1, #1					// r1 = ARR = 4 MHz / f - 1
+	ldr r2, =TIM2_BASE
+	str r1, [r2, #TIM_ARR]
+	lsr r1, r1, #1
+	str r1, [r2, #TIM_CCR2]		// mitad del periodo en alto, mitad en bajo
+	movs r1, #1
+	str r1, [r2, #TIM_EGR]		// UG: carga ARR y CCR2 de inmediato
+	bx lr
+.size	tono, .-tono
+
+
+/*
+ * silencio: deja PB3 siempre en 1 (zumbador apagado).
+ * En PWM 1 la salida esta en 1 mientras CNT < CCR2, y CCR2 = 0xFFFFFFFF
+ * nunca se alcanza.
+ */
+.type	silencio,%function
+silencio:
+	ldr r2, =TIM2_BASE
+	mov r1, #0xFFFFFFFF
+	str r1, [r2, #TIM_CCR2]
+	movs r1, #1
+	str r1, [r2, #TIM_EGR]
+	bx lr
+.size	silencio, .-silencio
+
+
+/*
+ * mostrar: r0 = numero (0..9999), r1 = numero de barridos del display
+ * Multiplexa los 4 digitos; los ceros a la izquierda quedan apagados.
+ */
+.type	mostrar,%function
+mostrar:
+	push {r4-r7, lr}
+	mov r5, r0
+	mov r7, r1
+barrido:
+	mov r6, r5					// r6 = numero que se va descomponiendo
+	movs r4, #0					// r4 = posicion (0 = unidades ... 3 = miles)
+digito:
+	cbz r4, digito_numero		// las unidades siempre se muestran
+	cbz r6, digito_apagado		// cero a la izquierda: ya no quedan cifras
+digito_numero:
+
+	movs r1, #10
+	udiv r2, r6, r1				// r2 = r6 / 10
+	mls r3, r2, r1, r6			// r3 = r6 - r2*10 = digito actual
+	mov r6, r2
+	ldr r0, =tabla_segmentos
+	ldrb r0, [r0, r3]			// r0 = patron de segmentos del digito
+	b digito_enviar
+digito_apagado:
+	movs r0, #0xFF				// todos los segmentos apagados
+digito_enviar:
+	ldr r1, =tabla_posicion
+	ldrb r1, [r1, r4]			// r1 = seleccion del digito en el display
+	bl escribir_display
+
+	ldr r0, =DELAY_DIGITO
+	bl retardo
+
+	adds r4, #1
+	cmp r4, #4
+	blt digito
+
+	subs r7, #1
+	bne barrido
+	pop {r4-r7, pc}
+.size	mostrar, .-mostrar
+
+
+/*
+ * escribir_display: r0 = segmentos, r1 = seleccion de digito
+ * Envia los dos bytes a los 74HC595 y luego da el pulso de LATCH.
+ */
+.type	escribir_display,%function
+escribir_display:
+	push {r4, lr}
+	mov r4, r1
+	ldr r2, =GPIOB_BASE
+	mov r1, #(1 << (5+16))		// LATCH en 0
+	str r1, [r2, #GPIO_BSRR]
+	bl enviar_byte				// primero los segmentos
+	mov r0, r4
+	bl enviar_byte				// luego la seleccion de digito
+	ldr r2, =GPIOB_BASE
+	mov r1, #(1 << 5)			// LATCH en 1: los 595 muestran los datos
+	str r1, [r2, #GPIO_BSRR]
+	pop {r4, pc}
+.size	escribir_display, .-escribir_display
+
+
+/*
+ * enviar_byte: r0 = byte, se envia el bit mas significativo primero
+ * DATA = PA9, CLOCK = PA8 (el 595 lee el dato en el flanco de subida)
+ */
+.type	enviar_byte,%function
+enviar_byte:
+	ldr r2, =GPIOA_BASE
+	movs r3, #8
+bit:
+	tst r0, #0x80
+	ite ne
+	movne r1, #(1 << 9)			// DATA = 1
+	moveq r1, #(1 << (9+16))	// DATA = 0
+	str r1, [r2, #GPIO_BSRR]
+	mov r1, #(1 << 8)			// CLOCK = 1
+	str r1, [r2, #GPIO_BSRR]
+	mov r1, #(1 << (8+16))		// CLOCK = 0
+	str r1, [r2, #GPIO_BSRR]
+	lsl r0, r0, #1
+	subs r3, #1
+	bne bit
+	bx lr
+.size	enviar_byte, .-enviar_byte
+
+
+/*
+ * retardo: r0 = numero de vueltas
+ */
+.type	retardo,%function
+retardo:
+	subs r0, #1
+	bne retardo
+	bx lr
+.size	retardo, .-retardo
+
+
+.section .rodata
+// Display de anodo comun: segmento encendido = 0 (bits: dp g f e d c b a)
+tabla_segmentos:
+	.byte 0xC0, 0xF9, 0xA4, 0xB0, 0x99, 0x92, 0x82, 0xF8, 0x80, 0x90	// 0..9
+// Seleccion de digito: indice 0 = unidades (derecha) ... 3 = miles (izquierda)
+tabla_posicion:
+	.byte 0xF8, 0xF4, 0xF2, 0xF1
+
+// Tema de Super Mario Bros: pares (frecuencia Hz, duracion); duracion 0 = fin
+.balign 2
+partitura:
+	// Introduccion
+	.hword MI6, T,  MI6, T,  SIL, T,  MI6, T,  SIL, T,  DO6, T,  MI6, T,  SIL, T
+	.hword SOL6, T, SIL, 3*T,  SOL5, T, SIL, 3*T
+
+	// Melodia (se toca dos veces)
+	.rept 2
+	.hword DO6, T,  SIL, 2*T,  SOL5, T,  SIL, 2*T,  MI5, T,  SIL, 2*T
+	.hword LA5, T,  SIL, T,  SI5, T,  SIL, T,  LAS5, T,  LA5, T,  SIL, T
+	.hword SOL5, T3,  MI6, T3,  SOL6, T3
+	.hword LA6, T,  SIL, T,  FA6, T,  SOL6, T,  SIL, T,  MI6, T,  SIL, T
+	.hword DO6, T,  RE6, T,  SI5, T,  SIL, 2*T
+	.endr
+
+	.hword 0, 0
+\end{lstlisting}
+
+\end{document}

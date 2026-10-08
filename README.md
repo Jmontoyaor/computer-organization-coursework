@@ -17,3 +17,7 @@ integrando a este repositorio a medida que avance:
 - [`hidroponia-esp32`](hidroponia-esp32/): monitor de variables de cultivos
   hidropónicos (pH, temperatura, TDS/EC, nivel de agua) sobre ESP32, con dashboard
   web en tiempo real.
+- [`mfshield-mario-stm32`](mfshield-mario-stm32/): tema de Super Mario Bros en
+  ensamblador ARM sobre la NUCLEO-L476RG con la Multi-Function Shield — el tono lo
+  genera el TIM2 por PWM y el display muestra la frecuencia de cada nota. Incluye el
+  informe.
