@@ -1,0 +1,142 @@
+:name: gateway_cli_pwm en Renode
+:description: Ejecuta el firmware compilado en un STM32L072 emulado y corre los casos de prueba de la guia.
+# Plantilla: correr_simulacion.py reemplaza {SIM} por la ruta de esta carpeta.
+#   python correr_simulacion.py --renode <ruta a renode.exe>
+# Salidas en sim/resultados/: uart.txt (terminal) y eventos.csv (flancos de PB5).
+
+using sysbus
+mach create "lrwan1"
+# Plataforma STM32L072 de Renode con los timers a 32 MHz (la genera
+# correr_simulacion.py; ver su docstring) + ajustes de este firmware.
+machine LoadPlatformDescription @{SIM}/resultados/stm32l072_32mhz.repl
+machine LoadPlatformDescription @{SIM}/lrwan1_ajustes.repl
+
+sysbus LoadELF @{SIM}/../.pio/build/lrwan1_cli/firmware.elf
+lpuart1 CreateFileBackend @{SIM}/resultados/uart.txt true
+include @{SIM}/sonda.py
+sonda_conectar
+
+# Arranque (B1 en reposo = bajo en el modelo)
+emulation RunFor "0.2"
+
+# Caso 1 y 2
+lpuart1 WriteLine "help"
+emulation RunFor "0.02"
+sonda_marcar "caso2_status"
+lpuart1 WriteLine "status"
+emulation RunFor "0.02"
+lpuart1 WriteLine "clock"
+emulation RunFor "0.02"
+
+# Caso 3: 500 Hz (duty inicial 0 %: se fija 50 % en el caso 4)
+sonda_marcar "caso3_set_frequency_500"
+lpuart1 WriteLine "set frequency 500"
+emulation RunFor "0.02"
+# Caso 4
+sonda_marcar "caso4_set_duty_50"
+lpuart1 WriteLine "set duty 50"
+emulation RunFor "0.02"
+# Caso 5
+sonda_marcar "caso5_set_frequency_1000"
+lpuart1 WriteLine "set frequency 1000"
+emulation RunFor "0.02"
+# Caso 6
+sonda_marcar "caso6_set_duty_25"
+lpuart1 WriteLine "set duty 25"
+emulation RunFor "0.02"
+lpuart1 WriteLine "status"
+emulation RunFor "0.02"
+lpuart1 WriteLine "timer"
+emulation RunFor "0.02"
+
+# Caso 7 y 8: errores (el PWM debe seguir igual)
+sonda_marcar "caso7_8_errores"
+lpuart1 WriteLine "hola"
+emulation RunFor "0.005"
+lpuart1 WriteLine "set frequency 0"
+emulation RunFor "0.005"
+lpuart1 WriteLine "set frequency 200000"
+emulation RunFor "0.005"
+lpuart1 WriteLine "set duty 150"
+emulation RunFor "0.005"
+lpuart1 WriteLine "set duty abc"
+emulation RunFor "0.005"
+lpuart1 WriteLine "set brightness 33"
+emulation RunFor "0.005"
+lpuart1 WriteLine "esta linea es mucho mas larga que los sesenta y cuatro caracteres que admite el buffer"
+emulation RunFor "0.01"
+
+# Caso 9: pulsacion con rebotes sinteticos en PB2 (3 rebotes al pulsar y 2 al soltar)
+sonda_marcar "preparar_boton"
+lpuart1 WriteLine "set brightness 0"
+emulation RunFor "0.005"
+gpioPortB OnGPIO 2 true
+emulation RunFor "0.002"
+gpioPortB OnGPIO 2 false
+emulation RunFor "0.001"
+gpioPortB OnGPIO 2 true
+emulation RunFor "0.003"
+gpioPortB OnGPIO 2 false
+emulation RunFor "0.001"
+gpioPortB OnGPIO 2 true
+emulation RunFor "0.15"
+gpioPortB OnGPIO 2 false
+emulation RunFor "0.002"
+gpioPortB OnGPIO 2 true
+emulation RunFor "0.001"
+gpioPortB OnGPIO 2 false
+emulation RunFor "0.1"
+sonda_marcar "caso9_tras_una_pulsacion"
+emulation RunFor "0.01"
+lpuart1 WriteLine "button"
+emulation RunFor "0.005"
+lpuart1 WriteLine "status"
+emulation RunFor "0.02"
+
+# Caso 10: niveles de brillo con las dos curvas
+sonda_marcar "cambio_de_curva"
+lpuart1 WriteLine "set curve gamma"
+emulation RunFor "0.005"
+sonda_marcar "caso10_gamma_20"
+lpuart1 WriteLine "set brightness 20"
+emulation RunFor "0.01"
+sonda_marcar "caso10_gamma_40"
+lpuart1 WriteLine "set brightness 40"
+emulation RunFor "0.01"
+sonda_marcar "caso10_gamma_60"
+lpuart1 WriteLine "set brightness 60"
+emulation RunFor "0.01"
+sonda_marcar "caso10_gamma_80"
+lpuart1 WriteLine "set brightness 80"
+emulation RunFor "0.01"
+sonda_marcar "cambio_de_curva"
+lpuart1 WriteLine "set curve linear"
+emulation RunFor "0.005"
+sonda_marcar "caso10_lineal_20"
+lpuart1 WriteLine "set brightness 20"
+emulation RunFor "0.01"
+sonda_marcar "caso10_lineal_40"
+lpuart1 WriteLine "set brightness 40"
+emulation RunFor "0.01"
+sonda_marcar "caso10_lineal_60"
+lpuart1 WriteLine "set brightness 60"
+emulation RunFor "0.01"
+sonda_marcar "caso10_lineal_80"
+lpuart1 WriteLine "set brightness 80"
+emulation RunFor "0.01"
+
+# Caso 11 a 13: MCO, SPI y ADC (dependen de lo que modele Renode)
+sonda_marcar "fin"
+lpuart1 WriteLine "mco on"
+emulation RunFor "0.02"
+lpuart1 WriteLine "radio"
+emulation RunFor "0.05"
+lpuart1 WriteLine "adc"
+emulation RunFor "0.02"
+lpuart1 WriteLine "pwm off"
+emulation RunFor "0.005"
+lpuart1 WriteLine "status"
+emulation RunFor "0.02"
+
+sonda_guardar @{SIM}/resultados/eventos.csv
+quit

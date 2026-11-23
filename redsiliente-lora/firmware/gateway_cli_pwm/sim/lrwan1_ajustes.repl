@@ -1,0 +1,12 @@
+// Ajustes al modelo STM32L072 de Renode 1.17.1 para este firmware.
+// 1) PB5 AF4 = TIM3_CH2 (tabla de AF de stm32l0xx_hal_gpio_ex.h); el modelo base lo
+//    tiene en AF2. Sin esto la salida PWM no llega al pin.
+timer3:
+    1 -> gpioPortB#05@4
+
+// 2) "Sonda" en PB5: un LED virtual cuyo cambio de estado queda en el log con la
+//    hora virtual, como un canal de analizador logico.
+sonda_pb5: Miscellaneous.LED @ gpioPortB 5
+
+gpioPortB:
+    5 -> sonda_pb5@0

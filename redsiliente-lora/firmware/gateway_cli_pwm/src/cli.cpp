@@ -283,6 +283,11 @@ void cmd_button(int, char**) {
 void cmd_adc(int, char**) {
     AdcReading r;
     adc_monitor_read(&r);
+    if (r.vrefint_raw == 0) {
+        // Sin VREFINT no se puede calcular VDDA ni corregir la temperatura.
+        error("VREFINT reads 0: ADC not converting");
+        return;
+    }
     serial_printf("VREFINT raw: %lu (factory cal %lu at 3000 mV)\r\n",
                   static_cast<unsigned long>(r.vrefint_raw),
                   static_cast<unsigned long>(r.vrefint_cal));

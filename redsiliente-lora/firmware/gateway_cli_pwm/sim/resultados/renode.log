@@ -1,0 +1,143 @@
+[17:37:03.2537] [INFO] Loaded monitor commands from: C:\Users\Usuario\Downloads\redsiliente-lora-trabajo\renode\renode_1.17.1-portable\scripts/monitor.py
+Renode, version 1.17.1 (1.17.1+20261123gite91f8232b)
+
+
+(monitor) include @C:/Users/Usuario/Downloads/redsiliente-lora-trabajo/repo/redsiliente-lora/firmware/gateway_cli_pwm/sim/resultados/simulacion_rutas.resc
+
+[17:37:03.2886] [INFO] Including script(s): C:\Users\Usuario\Downloads\redsiliente-lora-trabajo\repo\redsiliente-lora\firmware\gateway_cli_pwm\sim\resultados\simulacion_rutas.resc
+[17:37:03.3004] [INFO] System bus created.
+[17:37:05.3263] [INFO] sysbus: Loaded SVD: W:\tmp\renode-11076\bb4882b3-9a15-43c3-97b9-37fa566d30bc.tmp. Name: STM32L0x1. Description: STM32L0x1.
+[17:37:05.3548] [INFO] sysbus: Loading block of 45904 bytes length at 0x8000000.
+[17:37:05.3611] [INFO] sysbus: Loading block of 2036 bytes length at 0x800B350.
+[17:37:05.3612] [INFO] sysbus: Loading block of 1540 bytes length at 0x200007F4.
+[17:37:05.7342] [INFO] cpu: Guessing VectorTableOffset value to be 0x8000000.
+[17:37:05.7424] [INFO] cpu: Setting initial values: PC = 0x8006B45, SP = 0x20005000.
+[17:37:05.7449] [INFO] lrwan1: Machine started.
+[17:37:05.7785] [WARNING] rcc: Unhandled write to offset 0x18. Unhandled bits: [7-8] when writing value 0x1FF. Tags: CSSLSEC (0x1), CSSHSEC (0x1).
+[17:37:05.7948] [WARNING] rcc: Unhandled write to offset 0x28. Unhandled bits: [18] when writing value 0x40000. Tags: LPUART1RST (0x1).
+[17:37:05.8061] [WARNING] timer3: Unhandled write to offset 0x18. Unhandled bits: [11] when writing value 0x6800. Tags: Output compare 2 preload enable (OC2PE) (0x1).
+[17:37:06.3566] [INFO] lrwan1: Machine paused.
+[17:37:06.3603] [INFO] lrwan1: Machine resumed.
+[17:37:06.4539] [INFO] lrwan1: Machine paused.
+[17:37:06.4616] [INFO] lrwan1: Machine resumed.
+[17:37:06.5151] [INFO] lrwan1: Machine paused.
+[17:37:06.5170] [INFO] lrwan1: Machine resumed.
+[17:37:06.5770] [INFO] lrwan1: Machine paused.
+[17:37:06.5788] [INFO] lrwan1: Machine resumed.
+[17:37:06.6625] [INFO] lrwan1: Machine paused.
+[17:37:06.6662] [INFO] lrwan1: Machine resumed.
+[17:37:06.7323] [INFO] lrwan1: Machine paused.
+[17:37:06.7348] [INFO] lrwan1: Machine resumed.
+[17:37:06.7880] [INFO] lrwan1: Machine paused.
+[17:37:06.7902] [INFO] lrwan1: Machine resumed.
+[17:37:06.8385] [INFO] lrwan1: Machine paused.
+[17:37:06.8406] [INFO] lrwan1: Machine resumed.
+[17:37:06.9075] [INFO] lrwan1: Machine paused.
+[17:37:06.9117] [INFO] lrwan1: Machine resumed.
+[17:37:06.9671] [INFO] lrwan1: Machine paused.
+[17:37:06.9699] [INFO] lrwan1: Machine resumed.
+[17:37:06.9839] [INFO] lrwan1: Machine paused.
+[17:37:06.9861] [INFO] lrwan1: Machine resumed.
+[17:37:07.0032] [INFO] lrwan1: Machine paused.
+[17:37:07.0047] [INFO] lrwan1: Machine resumed.
+[17:37:07.0220] [INFO] lrwan1: Machine paused.
+[17:37:07.0236] [INFO] lrwan1: Machine resumed.
+[17:37:07.0378] [INFO] lrwan1: Machine paused.
+[17:37:07.0395] [INFO] lrwan1: Machine resumed.
+[17:37:07.0536] [INFO] lrwan1: Machine paused.
+[17:37:07.0547] [INFO] lrwan1: Machine resumed.
+[17:37:07.0706] [INFO] lrwan1: Machine paused.
+[17:37:07.0718] [INFO] lrwan1: Machine resumed.
+[17:37:07.1066] [INFO] lrwan1: Machine paused.
+[17:37:07.1080] [INFO] lrwan1: Machine resumed.
+[17:37:07.1214] [INFO] lrwan1: Machine paused.
+[17:37:07.1559] [INFO] lrwan1: Machine resumed.
+[17:37:07.1638] [INFO] lrwan1: Machine paused.
+[17:37:07.1659] [INFO] lrwan1: Machine resumed.
+[17:37:07.1691] [INFO] lrwan1: Machine paused.
+[17:37:07.1703] [INFO] lrwan1: Machine resumed.
+[17:37:07.1798] [INFO] lrwan1: Machine paused.
+[17:37:07.1809] [INFO] lrwan1: Machine resumed.
+[17:37:07.1831] [INFO] lrwan1: Machine paused.
+[17:37:07.1842] [INFO] lrwan1: Machine resumed.
+[17:37:07.5406] [INFO] lrwan1: Machine paused.
+[17:37:07.5438] [INFO] lrwan1: Machine resumed.
+[17:37:07.5479] [INFO] lrwan1: Machine paused.
+[17:37:07.5499] [INFO] lrwan1: Machine resumed.
+[17:37:07.5526] [INFO] lrwan1: Machine paused.
+[17:37:07.5537] [INFO] lrwan1: Machine resumed.
+[17:37:07.7953] [INFO] lrwan1: Machine paused.
+[17:37:07.7979] [INFO] lrwan1: Machine resumed.
+[17:37:07.8219] [INFO] lrwan1: Machine paused.
+[17:37:07.8239] [INFO] lrwan1: Machine resumed.
+[17:37:07.8392] [INFO] lrwan1: Machine paused.
+[17:37:07.8408] [INFO] lrwan1: Machine resumed.
+[17:37:07.8934] [INFO] lrwan1: Machine paused.
+[17:37:07.8949] [INFO] lrwan1: Machine resumed.
+[17:37:07.9088] [INFO] lrwan1: Machine paused.
+[17:37:07.9105] [INFO] lrwan1: Machine resumed.
+[17:37:07.9412] [INFO] lrwan1: Machine paused.
+[17:37:07.9435] [INFO] lrwan1: Machine resumed.
+[17:37:07.9704] [INFO] lrwan1: Machine paused.
+[17:37:07.9725] [INFO] lrwan1: Machine resumed.
+[17:37:08.0007] [INFO] lrwan1: Machine paused.
+[17:37:08.0023] [INFO] lrwan1: Machine resumed.
+[17:37:08.0289] [INFO] lrwan1: Machine paused.
+[17:37:08.0305] [INFO] lrwan1: Machine resumed.
+[17:37:08.0452] [INFO] lrwan1: Machine paused.
+[17:37:08.0465] [INFO] lrwan1: Machine resumed.
+[17:37:08.0737] [INFO] lrwan1: Machine paused.
+[17:37:08.0749] [INFO] lrwan1: Machine resumed.
+[17:37:08.1018] [INFO] lrwan1: Machine paused.
+[17:37:08.1032] [INFO] lrwan1: Machine resumed.
+[17:37:08.1343] [INFO] lrwan1: Machine paused.
+[17:37:08.1364] [INFO] lrwan1: Machine resumed.
+[17:37:08.1642] [INFO] lrwan1: Machine paused.
+[17:37:08.1663] [INFO] lrwan1: Machine resumed.
+[17:37:08.2274] [INFO] lrwan1: Machine paused.
+[17:37:08.2294] [INFO] lrwan1: Machine resumed.
+[17:37:08.2487] [WARNING] rcc: Unhandled write to offset 0x24. Unhandled bits: [12] when writing value 0x1000. Tags: SPI1RST (0x1).
+[17:37:08.2506] [WARNING] spi1: SPI transmission while no SPI peripheral is connected.
+[17:37:08.2506] [WARNING] spi1: SPI transmission while no SPI peripheral is connected. (9)
+[17:37:08.3515] [INFO] lrwan1: Machine paused.
+[17:37:08.3545] [INFO] lrwan1: Machine resumed.
+[17:37:08.3574] [WARNING] adc1: Unhandled write to offset 0x10. Unhandled bits: [31] when writing value 0x80000000. Tags: RESERVED (0x2).
+[17:37:08.3587] [WARNING] sysbus: [cpu: 0x80007D8] ReadDoubleWord from an unimplemented register ADC:CCR (0x40012708), returning a value from SVD: 0x0
+[17:37:08.3594] [WARNING] sysbus: [cpu: 0x80007DE] WriteDoubleWord of value 0x0 to an unimplemented register ADC:CCR (0x40012708) generated from SVD
+[17:37:08.3594] [WARNING] sysbus: [cpu: 0x80007E2] ReadDoubleWord from an unimplemented register ADC:CCR (0x40012708), returning a value from SVD: 0x0
+[17:37:08.3594] [WARNING] sysbus: [cpu: 0x80007E8] WriteDoubleWord of value 0x0 to an unimplemented register ADC:CCR (0x40012708) generated from SVD
+[17:37:08.3595] [WARNING] adc1: Unhandled write to offset 0x8. Unhandled bits: [28] when writing value 0x10000000. Tags: External trigger enable for regular channels (0x1).
+[17:37:08.3596] [WARNING] adc1: Unhandled write to offset 0xC. Unhandled bits: [12] when writing value 0x1000. Tags: Channel 14 sampling time (0x1).
+[17:37:08.3597] [WARNING] adc1: Unhandled write to offset 0x14. Unhandled bits: [0-2] when writing value 0x7. Tags: Data offset for injected channel 1 (0x7).
+[17:37:08.3603] [WARNING] adc1: Unhandled read from offset 0x28 (WatchdogLowerThreshold).
+[17:37:08.3605] [WARNING] adc1: Unhandled write to offset 0x28 (WatchdogLowerThreshold), value 0x20000.
+[17:37:08.3605] [WARNING] sysbus: [cpu: 0x8000B70] ReadDoubleWord from an unimplemented register ADC:CCR (0x40012708), returning a value from SVD: 0x0
+[17:37:08.3605] [WARNING] sysbus: [cpu: 0x8000B74] WriteDoubleWord of value 0x400000 to an unimplemented register ADC:CCR (0x40012708) generated from SVD
+[17:37:08.3606] [WARNING] adc1: Unhandled write to offset 0x8. Unhandled bits: [31] when writing value 0x80000000. Tags: RESERVED (0x1).
+[17:37:08.4757] [WARNING] flashController: Unhandled read from offset 0x78 (WriteProtection1+0x58).
+[17:37:08.4758] [WARNING] adc1: Unhandled write to offset 0x10. Unhandled bits: [31] when writing value 0x80000000. Tags: RESERVED (0x2).
+[17:37:08.4759] [WARNING] sysbus: [cpu: 0x80007D8] ReadDoubleWord from an unimplemented register ADC:CCR (0x40012708), returning a value from SVD: 0x0
+[17:37:08.4759] [WARNING] sysbus: [cpu: 0x80007DE] WriteDoubleWord of value 0x0 to an unimplemented register ADC:CCR (0x40012708) generated from SVD
+[17:37:08.4759] [WARNING] sysbus: [cpu: 0x80007E2] ReadDoubleWord from an unimplemented register ADC:CCR (0x40012708), returning a value from SVD: 0x0
+[17:37:08.4759] [WARNING] sysbus: [cpu: 0x80007E8] WriteDoubleWord of value 0x0 to an unimplemented register ADC:CCR (0x40012708) generated from SVD
+[17:37:08.4759] [WARNING] adc1: Unhandled write to offset 0x8. Unhandled bits: [28] when writing value 0x10000001. Tags: External trigger enable for regular channels (0x1).
+[17:37:08.4759] [WARNING] adc1: Unhandled write to offset 0xC. Unhandled bits: [12] when writing value 0x1000. Tags: Channel 14 sampling time (0x1).
+[17:37:08.4760] [WARNING] adc1: Unhandled write to offset 0x14. Unhandled bits: [0-2] when writing value 0x7. Tags: Data offset for injected channel 1 (0x7).
+[17:37:08.4760] [WARNING] adc1: Unhandled read from offset 0x28 (WatchdogLowerThreshold).
+[17:37:08.4760] [WARNING] adc1: Unhandled write to offset 0x28 (WatchdogLowerThreshold), value 0x40000.
+[17:37:08.4760] [WARNING] sysbus: [cpu: 0x8000B5A] ReadDoubleWord from an unimplemented register ADC:CCR (0x40012708), returning a value from SVD: 0x0
+[17:37:08.4760] [WARNING] sysbus: [cpu: 0x8000B60] WriteDoubleWord of value 0x800000 to an unimplemented register ADC:CCR (0x40012708) generated from SVD
+[17:37:08.4761] [WARNING] adc1: Unhandled write to offset 0x8. Unhandled bits: [31] when writing value 0x80000001. Tags: RESERVED (0x1).
+[17:37:08.4762] [WARNING] flashController: Unhandled read from offset 0x78 (WriteProtection1+0x58).
+[17:37:08.4985] [INFO] lrwan1: Machine paused.
+[17:37:08.5000] [INFO] lrwan1: Machine resumed.
+[17:37:08.5133] [INFO] lrwan1: Machine paused.
+[17:37:08.5146] [INFO] lrwan1: Machine resumed.
+[17:37:08.5687] [INFO] lrwan1: Machine paused.
+1191 eventos guardados en C:/Users/Usuario/Downloads/redsiliente-lora-trabajo/repo/redsiliente-lora/firmware/gateway_cli_pwm/sim/resultados/eventos.csv
+
+
+Renode is quitting
+
+
+[17:37:08.6290] [INFO] lrwan1: Disposed.

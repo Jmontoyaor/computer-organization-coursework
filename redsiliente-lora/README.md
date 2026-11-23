@@ -354,7 +354,8 @@ Errores conocidos y límites:
 El firmware [`firmware/gateway_cli_pwm`](firmware/gateway_cli_pwm/) usa la misma
 B-L072Z-LRWAN1 del gateway para cumplir la guía *"STM32, PWM, CLI y código limpio"*. Es
 un firmware aparte del receptor LoRa porque los dos ocupan el mismo puerto serie. Compila
-con PlatformIO sin advertencias (RAM 9,9 %, Flash 23,4 %). Su README tiene el detalle;
+con PlatformIO sin advertencias (RAM 9,9 %, Flash 23,4 %) y se verificó ejecutándolo en el
+emulador Renode (ver abajo). Su README tiene el detalle;
 aquí, dónde se cumple cada punto:
 
 | Punto de la guía | Dónde | Resumen |
@@ -368,9 +369,17 @@ aquí, dónde se cumple cada punto:
 | 8. Serial y CLI | sec. 2 y 8 | LPUART1 (PA2/PA3) → ST-LINK, 115200 8N1; línea con terminador, buffer de 64 con overflow; `help`, `status`, `frequency`, `duty`, `set frequency`, `set duty`, errores claros |
 | 9. Clean code | todo el firmware | Nombres descriptivos, constantes con nombre, interfaces en `.h`, comentarios del *por qué*, validación de argumentos |
 | 10. Periféricos extra | sec. 9 | ADC (VDDA y temperatura), SPI (lee `RegVersion` = 0x12 del SX1276), UART, MCO |
-| 11. Validación Logic 2 | sec. 10 | Montaje, canales y 13 casos de prueba |
-| 12. Entregables | sec. 1–10 | Faltan solo las **capturas de terminal y de Logic 2 con la placa** |
+| 11. Validación | sec. 10 y 12 | Montaje para Logic 2 y 13 casos; **10 casos comprobados en simulación (Renode)** con la salida PWM medida en tiempo virtual |
+| 12. Entregables | sec. 1–12 | Terminal y formas de onda **de la simulación**; no hay captura de Logic 2 sobre la placa |
 | 13. Sustentación | sec. 11 | Respuestas cortas a las 11 preguntas |
 
 Hallazgo al revisar el core: en esta placa el `Serial` de STM32duino es **LPUART1**
 (`SERIAL_UART_INSTANCE 101`), no USART2; las secciones anteriores ya lo reflejan.
+
+**Verificación en simulación.** El `.elf` se ejecutó en Renode 1.17.1 (STM32L072 emulado)
+con los 13 casos de la guía; los resultados están en
+[`firmware/gateway_cli_pwm/sim/resultados/`](firmware/gateway_cli_pwm/sim/resultados/). Medido
+en el PB5 emulado: 500 Hz → periodo 2,0000 ms y 1,0000 ms en alto; 1 kHz al 25 % → 250,00 µs
+en alto; niveles gamma 2,90 / 13,30 / 32,50 / 61,20 %; una pulsación con 3 rebotes → un
+solo evento. Son resultados de simulación, no mediciones sobre la placa; el ADC, el SX1276
+y el MCO no están modelados en el emulador.

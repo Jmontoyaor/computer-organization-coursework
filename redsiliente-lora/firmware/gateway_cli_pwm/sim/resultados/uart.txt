@@ -1,0 +1,136 @@
+
+Redsiliente gateway - CLI/PWM (B-L072Z-LRWAN1)
+Type 'help' for the command list.
+> help
+  help                           list commands
+  status                         clock, PWM, mode and button summary
+  frequency                      PWM frequency read from the timer
+  duty                           PWM duty read from the timer
+  set frequency <1-100000>       change PWM frequency (Hz)
+  set duty <0-100>               fixed duty (%), manual mode
+  set brightness <0|20|..|100>   brightness level through the curve
+  set curve <linear|gamma>       brightness to duty curve
+  fade <linear|gamma|off>        sweep brightness 0-100-0 %
+  pwm <on|off>                   enable or force the output low
+  clock                          RCC configuration decoded from registers
+  mco <on|off>                   SYSCLK/16 on PA8 for the logic analyzer
+  timer                          timer mode, polarity and registers
+  button                         button state machine counters
+  adc                            VDDA and temperature (internal ADC channels)
+  radio                          read SX1276 registers over SPI1
+> status
+System clock: 32000000 Hz (PLL)
+Timer clock: 32000000 Hz (TIM3 CH2)
+PWM frequency: 1000.000 Hz (requested 1000 Hz)
+Duty cycle: 0.0 % (PSC=0 ARR=31999 CCR=0)
+PWM output: enabled
+Mode: level (button), curve: gamma 2.2, brightness: 0 %
+Button: RELEASED, presses: 0
+> clock
+SYSCLK source: PLL (HSI16 x4 /2)
+SYSCLK: 32000000 Hz (from RCC registers), HAL: 32000000 Hz
+HCLK:  32000000 Hz (AHB /1)
+PCLK1: 32000000 Hz (APB1 /1)
+PCLK2: 32000000 Hz (APB2 /1)
+APB1 timers (TIM2/3): 32000000 Hz, APB2 timers (TIM21/22): 32000000 Hz
+PWM uses TIM3, HardwareTimer reports 32000000 Hz
+Serial = LPUART1 (PA2/PA3), clock PCLK1, BRR=71111 -> 115200 baud
+Flash latency: 1 WS, voltage range: 1
+MCO (PA8): off
+> set frequency 500
+OK, applied PWM frequency: 500.000 Hz = 32000000 / ((0 + 1) * (63999 + 1))
+> set duty 50
+OK, applied Duty cycle: 50.0 % = 32000 / (63999 + 1)
+> set frequency 1000
+OK, applied PWM frequency: 1000.000 Hz = 32000000 / ((0 + 1) * (31999 + 1))
+> set duty 25
+OK, applied Duty cycle: 25.0 % = 8000 / (31999 + 1)
+> status
+System clock: 32000000 Hz (PLL)
+Timer clock: 32000000 Hz (TIM3 CH2)
+PWM frequency: 1000.000 Hz (requested 1000 Hz)
+Duty cycle: 25.0 % (PSC=0 ARR=31999 CCR=8000)
+PWM output: enabled
+Mode: manual duty, curve: gamma 2.2, brightness: 0 %
+Button: RELEASED, presses: 0
+> timer
+TIM3 channel 2, input clock 32000000 Hz
+Counter: up, edge-aligned
+Output compare mode: 6 (PWM mode 1), CCR preload: off
+Polarity: active high
+PSC=0 ARR=31999 CCR=8000
+> hola
+ERROR: unknown command 'hola'. Type 'help'.
+> set frequency 0
+ERROR: frequency must be an integer between 1 and 100000 Hz
+> set frequency 200000
+ERROR: frequency must be an integer between 1 and 100000 Hz
+> set duty 150
+ERROR: duty must be an integer between 0 and 100 %
+> set duty abc
+ERROR: duty must be an integer between 0 and 100 %
+> set brightness 33
+ERROR: brightness must be one of 0, 20, 40, 60, 80, 100
+> esta linea es mucho mas larga que los sesenta y cuatro caractere
+ERROR: line longer than 64 characters, discarded
+> set brightness 0
+OK, applied Duty cycle: 0.0 % = 0 / (31999 + 1)
+> button
+State: RELEASED, pin now: LOW, active level: HIGH
+Raw edges: 8, valid presses: 1, bounces rejected: 3
+> status
+System clock: 32000000 Hz (PLL)
+Timer clock: 32000000 Hz (TIM3 CH2)
+PWM frequency: 1000.000 Hz (requested 1000 Hz)
+Duty cycle: 2.9 % (PSC=0 ARR=31999 CCR=928)
+PWM output: enabled
+Mode: level (button), curve: gamma 2.2, brightness: 20 %
+Button: RELEASED, presses: 1
+> set curve gamma
+OK, curve: gamma 2.2
+> set brightness 20
+OK, applied Duty cycle: 2.9 % = 928 / (31999 + 1)
+> set brightness 40
+OK, applied Duty cycle: 13.3 % = 4256 / (31999 + 1)
+> set brightness 60
+OK, applied Duty cycle: 32.5 % = 10400 / (31999 + 1)
+> set brightness 80
+OK, applied Duty cycle: 61.2 % = 19584 / (31999 + 1)
+> set curve linear
+OK, curve: linear
+> set brightness 20
+OK, applied Duty cycle: 20.0 % = 6400 / (31999 + 1)
+> set brightness 40
+OK, applied Duty cycle: 40.0 % = 12800 / (31999 + 1)
+> set brightness 60
+OK, applied Duty cycle: 60.0 % = 19200 / (31999 + 1)
+> set brightness 80
+OK, applied Duty cycle: 80.0 % = 25600 / (31999 + 1)
+> mco on
+SYSCLK source: PLL (HSI16 x4 /2)
+SYSCLK: 32000000 Hz (from RCC registers), HAL: 32000000 Hz
+HCLK:  32000000 Hz (AHB /1)
+PCLK1: 32000000 Hz (APB1 /1)
+PCLK2: 32000000 Hz (APB2 /1)
+APB1 timers (TIM2/3): 32000000 Hz, APB2 timers (TIM21/22): 32000000 Hz
+PWM uses TIM3, HardwareTimer reports 32000000 Hz
+Serial = LPUART1 (PA2/PA3), clock PCLK1, BRR=71111 -> 115200 baud
+Flash latency: 1 WS, voltage range: 1
+MCO (PA8): SYSCLK/16 = 2000000 Hz
+> radio
+SX1276 RegVersion (0x42): 0x00 (UNEXPECTED, expected 0x12)
+RegOpMode (0x01): 0x00
+RegFrf (0x06-0x08): 0x000000 = 0 kHz (reset value)
+> adc
+ERROR: VREFINT reads 0: ADC not converting
+> pwm off
+OK, PWM output: disabled
+> status
+System clock: 32000000 Hz (PLL)
+Timer clock: 32000000 Hz (TIM3 CH2)
+PWM frequency: 1000.000 Hz (requested 1000 Hz)
+Duty cycle: 80.0 % (PSC=0 ARR=31999 CCR=25600)
+PWM output: disabled
+Mode: level (button), curve: linear, brightness: 80 %
+Button: RELEASED, presses: 1
+> 

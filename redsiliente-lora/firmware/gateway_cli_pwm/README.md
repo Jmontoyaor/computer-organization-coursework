@@ -12,7 +12,7 @@ identificador del SX1276 del propio proyecto). Todo lo que informa la CLI sale d
 > usan el mismo puerto serie: el receptor lo dedica a las tramas que lee el backend.
 
 Compilado con PlatformIO (`platformio/ststm32@20.0.0`): RAM 2036 B (9,9 %),
-Flash 46 000 B (23,4 %), sin advertencias con `-Wall`.
+Flash 46 052 B (23,4 %), sin advertencias con `-Wall`.
 
 ## 1. Conexiones y requisitos
 
@@ -68,8 +68,8 @@ pio device monitor       # CLI a 115200 8N1 (cerrarlo antes de volver a cargar)
 | `adc` | VDDA y temperatura con la calibración de fábrica |
 | `radio` | Lee `RegVersion`, `RegOpMode` y `RegFrf` del SX1276 por SPI |
 
-Ejemplo de sesión (formato que imprime el firmware; los valores de una sesión real
-deben capturarse en la placa):
+Ejemplo de sesión (salida del firmware ejecutado en el emulador Renode; ver la
+sección 12):
 
 ```text
 > status
@@ -239,24 +239,28 @@ Montaje: GND del analizador a GND de la placa; **D0 = PB5 (D4)**, **D1 = PA2 (D1
 **D2 = PA8 (D7, MCO)**, **D3 = PB2 (D6, botón)**. Muestreo ≥ 25 MS/s (para ver el MCO
 de 2 MHz); analizador **Async Serial** en D1 a 115200 8N1.
 
-| Caso | Acción | Resultado esperado | Medida (Logic 2) |
+| Caso | Acción | Resultado esperado | Simulación en Renode (sec. 12) |
 |---|---|---|---|
-| 1 | `help` | Lista completa de comandos | por capturar |
-| 2 | `status` | 32 MHz, TIM3 CH2, valores iguales a los de los registros | por capturar |
-| 3 | `set frequency 500` | Periodo 2,000 ms en D0 | por medir |
-| 4 | `set duty 50` | Alto 1,000 ms / bajo 1,000 ms | por medir |
-| 5 | `set frequency 1000` | Periodo 1,000 ms, duty conservado | por medir |
-| 6 | `set duty 25` | Alto 250 µs / bajo 750 µs | por medir |
-| 7 | `hola` | `ERROR: unknown command`, el PWM sigue igual | por capturar |
-| 8 | `set frequency 0`, `set duty 150` | Rechazo con el rango válido | por capturar |
-| 9 | Pulsar B1 una vez | Un solo cambio de nivel; en D3 se ven los rebotes, en `button` un solo evento | por medir |
-| 10 | `fade gamma` vs `fade linear` | Cambio más uniforme con gamma | observación |
-| 11 | `mco on` | 2,000 MHz en D2 → SYSCLK = 32 MHz | por medir |
-| 12 | `radio` | `RegVersion 0x12` | por capturar |
-| 13 | `adc` | VDDA ≈ 3300 mV | por medir |
+| 1 | `help` | Lista completa de comandos | ✅ lista los 16 usos |
+| 2 | `status` | 32 MHz, TIM3 CH2, valores iguales a los de los registros | ✅ `32000000 Hz (PLL)`, `TIM3 CH2`, PSC/ARR/CCR leídos |
+| 3 | `set frequency 500` | Periodo 2,000 ms en D0 | ✅ ARR = 63999; salida en 0 porque el duty aún es 0 % |
+| 4 | `set duty 50` | Alto 1,000 ms / bajo 1,000 ms | ✅ periodo 2,0000 ms, alto 1,0000 ms (50,00 %) |
+| 5 | `set frequency 1000` | Periodo 1,000 ms, duty conservado | ✅ 999,97 µs, alto 500,00 µs (50,00 %) |
+| 6 | `set duty 25` | Alto 250 µs / bajo 750 µs | ✅ alto 250,00 µs, bajo 749,97 µs (25,00 %) |
+| 7 | `hola` | `ERROR: unknown command`, el PWM sigue igual | ✅ error; PWM sigue en 250 µs / 1 ms |
+| 8 | `set frequency 0`, `set duty 150` | Rechazo con el rango válido | ✅ 6 entradas inválidas rechazadas, incluida una línea de más de 64 caracteres |
+| 9 | Pulsar B1 una vez | Un solo cambio de nivel | ✅ 8 flancos con 3 rebotes → 1 pulsación; 0 % → 20 % (2,9 % de duty) |
+| 10 | Curva gamma vs lineal | Niveles más uniformes con gamma | ✅ duty medido 2,90 / 13,30 / 32,50 / 61,20 % vs 20 / 40 / 60 / 80 % |
+| 11 | `mco on` | 2,000 MHz en D2 → SYSCLK = 32 MHz | ⚠️ registros: `SYSCLK/16 = 2000000 Hz`; Renode no genera la señal MCO |
+| 12 | `radio` | `RegVersion 0x12` | ⚠️ `0x00`: Renode no tiene un SX1276 en el SPI1 |
+| 13 | `adc` | VDDA ≈ 3300 mV | ⚠️ `ERROR: VREFINT reads 0`: el ADC de Renode no modela los canales internos |
+| — | `pwm off` | Salida forzada a nivel bajo | ✅ PB5 queda en 0 y no hay más flancos |
 
-Las columnas "por medir / por capturar" se llenan con la placa; guardar las capturas en
-`redsiliente-lora/img/` (por ejemplo `cli-logic2-500hz.png`, `cli-terminal-status.png`).
+Los casos ✅ se comprobaron ejecutando **este mismo firmware compilado** en un STM32L072
+emulado (sección 12). Los casos ⚠️ dependen de hardware que el emulador no modela y solo
+se pueden confirmar en la placa. La simulación no reemplaza la captura con Logic 2 sobre
+la placa; si se hace, guardarla en `redsiliente-lora/img/` (por ejemplo
+`cli-logic2-500hz.png`).
 
 ## 11. Preguntas de sustentación (respuestas cortas)
 
@@ -271,3 +275,99 @@ Las columnas "por medir / por capturar" se llenan con la placa; guardar las capt
 9. **Validación:** solo dígitos, rango, número de argumentos; se informa lo aplicado.
 10. **Reutilizables:** `button`, `serial_line`, `brightness`, `pwm_compute_timing`, `cli` (tabla).
 11. **Verificación:** sección 10, comparando `status` con la captura.
+
+## 12. Verificación en simulación (Renode)
+
+> **Esto es una simulación, no una medición sobre la placa.** Se ejecutó el `.elf`
+> compilado de este firmware en el emulador [Renode](https://renode.io) 1.17.1, que
+> modela el STM32L072. Sirve para comprobar que el firmware hace lo que reporta
+> (registros, CLI, máquina del botón, tiempos del PWM), pero no reemplaza la captura con
+> Logic 2: no reproduce la electrónica del LED, el ruido ni la tolerancia del HSI16.
+
+### Cómo se hizo
+
+| Archivo | Qué hace |
+|---|---|
+| [`sim/correr_simulacion.py`](sim/correr_simulacion.py) | Prepara la plataforma, ejecuta Renode y mide los flancos |
+| [`sim/simulacion.resc`](sim/simulacion.resc) | Escribe cada comando en el LPUART1 emulado, simula el botón y deja marcas por caso |
+| [`sim/lrwan1_ajustes.repl`](sim/lrwan1_ajustes.repl) | Conecta TIM3_CH2 a PB5 con AF4 y pone una "sonda" en PB5 |
+| [`sim/sonda.py`](sim/sonda.py) | Registra cada cambio de PB5 con el **tiempo virtual** del microcontrolador, como un canal de analizador lógico |
+| [`sim/resultados/`](sim/resultados/) | `uart.txt` (terminal), `eventos.csv` (flancos), `mediciones.md`, `pwm_simulado.png`, `renode.log` |
+
+```bash
+pio run                                                     # genera el .elf
+python sim/correr_simulacion.py --renode <ruta>/renode.exe  # ≈ 1 min
+```
+
+Ajustes al modelo de Renode, todos justificados con documentación de ST:
+- **Timers a 32 MHz.** El modelo crea los timers a 10 MHz fijos; el firmware los deja a
+  32 MHz (HSI16 × 4 / 2, APB /1). El script genera la plataforma a partir de la de Renode
+  cambiando solo ese valor. Primero se probó con `timer3 Frequency 32000000`, pero eso
+  solo cambia el contador y no los comparadores: el tiempo en alto salía como CCR / 10 MHz
+  (por ejemplo 800 µs para CCR = 8000).
+- **PB5 con AF4 = TIM3_CH2.** Es lo que dice la tabla de funciones alternativas de la HAL
+  (`stm32l0xx_hal_gpio_ex.h`) y lo que usa el core; el modelo de Renode lo tenía en AF2.
+
+### Terminal (extracto de `sim/resultados/uart.txt`)
+
+```text
+> clock
+SYSCLK source: PLL (HSI16 x4 /2)
+SYSCLK: 32000000 Hz (from RCC registers), HAL: 32000000 Hz
+HCLK:  32000000 Hz (AHB /1)
+PCLK1: 32000000 Hz (APB1 /1)
+PCLK2: 32000000 Hz (APB2 /1)
+APB1 timers (TIM2/3): 32000000 Hz, APB2 timers (TIM21/22): 32000000 Hz
+PWM uses TIM3, HardwareTimer reports 32000000 Hz
+Serial = LPUART1 (PA2/PA3), clock PCLK1, BRR=71111 -> 115200 baud
+Flash latency: 1 WS, voltage range: 1
+MCO (PA8): off
+> set frequency 500
+OK, applied PWM frequency: 500.000 Hz = 32000000 / ((0 + 1) * (63999 + 1))
+> set duty 50
+OK, applied Duty cycle: 50.0 % = 32000 / (63999 + 1)
+> set frequency 1000
+OK, applied PWM frequency: 1000.000 Hz = 32000000 / ((0 + 1) * (31999 + 1))
+> set duty 25
+OK, applied Duty cycle: 25.0 % = 8000 / (31999 + 1)
+> timer
+TIM3 channel 2, input clock 32000000 Hz
+Counter: up, edge-aligned
+Output compare mode: 6 (PWM mode 1), CCR preload: off
+Polarity: active high
+PSC=0 ARR=31999 CCR=8000
+> hola
+ERROR: unknown command 'hola'. Type 'help'.
+> set duty 150
+ERROR: duty must be an integer between 0 and 100 %
+> button
+State: RELEASED, pin now: LOW, active level: HIGH
+Raw edges: 8, valid presses: 1, bounces rejected: 3
+```
+
+### PWM medido en PB5 emulado
+
+![PWM simulado](sim/resultados/pwm_simulado.png)
+
+| Caso | Periodo | Frecuencia | Tiempo alto | Duty | Esperado |
+|---|---|---|---|---|---|
+| 500 Hz, 50 % | 2,0000 ms | 500,008 Hz | 1,0000 ms | 50,00 % | 2 ms / 1 ms |
+| 1000 Hz, 50 % | 999,97 µs | 1000,031 Hz | 500,00 µs | 50,00 % | 1 ms / 500 µs |
+| 1000 Hz, 25 % | 999,97 µs | 1000,031 Hz | 250,00 µs | 25,00 % | 1 ms / 250 µs |
+| Tras comandos inválidos | 999,97 µs | 1000,031 Hz | 250,00 µs | 25,00 % | sin cambios |
+| Una pulsación de B1 (0 → 20 %, gamma) | 999,97 µs | 1000,031 Hz | 29,00 µs | 2,90 % | 2,9 % |
+| Gamma 20 / 40 / 60 / 80 % | 999,97 µs | 1000,03 Hz | 29 / 133 / 325 / 612 µs | 2,90 / 13,30 / 32,50 / 61,20 % | tabla de la sec. 6 |
+| Lineal 20 / 40 / 60 / 80 % | 999,97 µs | 1000,03 Hz | 200 / 400 / 600 / 800 µs | 20 / 40 / 60 / 80 % | tabla de la sec. 6 |
+
+Tabla completa por caso: [`sim/resultados/mediciones.md`](sim/resultados/mediciones.md).
+
+### Diferencias del emulador (no son del firmware)
+
+| Observación | Causa |
+|---|---|
+| Periodo 999,97 µs en vez de 1000,00 µs (31 ns menos) | Un ciclo de 32 MHz: el modelo de Renode usa ARR como periodo en lugar de ARR + 1. Los registros sí tienen ARR = 31999 → (31999 + 1) / 32 MHz = 1 ms en la placa |
+| `CCR preload: off` | Renode ignora el bit OC2PE (lo avisa en `renode.log`); el firmware lo escribe (CCMR1 = 0x6800) |
+| `radio` responde 0x00 | No hay un SX1276 modelado en el SPI1 (`spi1: SPI transmission while no SPI peripheral is connected`) |
+| `adc` da error | El ADC de Renode no modela VREFINT ni el sensor de temperatura; el firmware lo detecta y lo informa |
+| MCO sin señal | Renode no genera la salida de reloj; el registro RCC_CFGR.MCOSEL sí queda configurado |
+| Rebotes del botón | Son sintéticos (3 al pulsar, 2 al soltar, de 1–3 ms), inyectados con `gpioPortB OnGPIO 2` |
