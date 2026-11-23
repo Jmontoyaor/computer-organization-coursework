@@ -125,8 +125,8 @@ def diagrama_conexion():
     flecha(ax, (12.9, 6.4), (13.4, 6.4), "", both=True, color="#aa0000")
     caja(ax, 13.6, 7.8, 1.9, 1.0, "Antena 915 MHz\nSMA CN10", ROJO, fs=7.5)
     flecha(ax, (14.5, 7.2), (14.5, 7.8), "", both=True, color="#aa0000")
-    caja(ax, 8.7, 1.0, 2.6, 1.8, "ST-LINK/V2-1\n(USB CN7)\nSWD: PA13/PA14\nVCP: USART2", GRIS, fs=8)
-    flecha(ax, (9.7, 4.0), (9.7, 2.8), "USART2\nPA2 TX / PA3 RX\n115200 8N1", both=True,
+    caja(ax, 8.7, 1.0, 2.6, 1.8, "ST-LINK/V2-1\n(USB CN7)\nSWD: PA13/PA14\nVCP: LPUART1", GRIS, fs=8)
+    flecha(ax, (9.7, 4.0), (9.7, 2.8), "LPUART1\nPA2 TX / PA3 RX\n115200 8N1", both=True,
            off=(0.0, -0.35), fs=7)
     caja(ax, 12.0, 1.0, 3.6, 1.8, "PC (PMU)\nbackend serial_bridge.py\n→ tablero offline", GRIS,
          fs=8.5)
@@ -185,7 +185,7 @@ def diagrama_bloques():
     caja(ax, 13.1, 3.3, 2.5, 1.6, "MessageProcessor\nvalida 10 campos\nHMAC-SHA256 → ACK", "#c9dcf2",
          fs=8)
     caja(ax, 13.1, 5.3, 2.5, 0.85, "LEDs LD1/LD3/LD4", VERDE, fs=8)
-    caja(ax, 10.4, 1.0, 2.4, 1.5, "USART2 → ST-LINK\nVCP 115200 Bd", GRIS, fs=8)
+    caja(ax, 10.4, 1.0, 2.4, 1.5, "LPUART1 → ST-LINK\nVCP 115200 Bd", GRIS, fs=8)
     caja(ax, 13.1, 1.0, 2.5, 1.5, "PC: backend\n(serial_bridge)\n→ tablero PMU", GRIS, fs=8)
     flecha(ax, (11.6, 5.3), (11.6, 4.9), "SPI/DIO0", fs=7, off=(0.55, -0.1), both=True)
     flecha(ax, (12.8, 4.1), (13.1, 4.1), "")
@@ -198,7 +198,7 @@ def diagrama_bloques():
         ax.add_patch(plt.Circle((x - 0.95, y), 0.17, color="#ffcc00", ec="black", zorder=5))
         ax.text(x - 0.95, y, n, ha="center", va="center", fontsize=8, fontweight="bold", zorder=6)
     ax.text(8, 0.05, "Puntos de medida Logic 2: (A) SPI+DIO0 del nodo en el header de la LILYGO; "
-                     "(B) DIO0 del gateway; (C) USART2 TX (PA2) hacia el PC.",
+                     "(B) DIO0 del gateway; (C) LPUART1 TX (PA2) hacia el PC.",
             ha="center", fontsize=8.5)
     fig.savefig(IMG / "diagrama-bloques.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -281,7 +281,7 @@ def maquina_estados():
 def temporizacion(toa_trama, toa_ack, uart_ms):
     fig, ax = plt.subplots(figsize=(16, 6.5))
     canales = ["Nodo NSS (IO18)", "Nodo SCK (IO5)", "Nodo DIO0 (IO26)", "Aire (RF)",
-               "GW DIO0 (PB4)", "GW USART2 TX (PA2)"]
+               "GW DIO0 (PB4)", "GW LPUART1 TX (PA2)"]
     n = len(canales)
 
     t_cfg = 1.0                 # configuracion + escritura FIFO por SPI
@@ -354,6 +354,80 @@ def temporizacion(toa_trama, toa_ack, uart_ms):
     plt.close(fig)
 
 
+# --------------------------------------------------------------------------
+#  5. Firmware gateway_cli_pwm: arquitectura y maquina de estados del boton
+# --------------------------------------------------------------------------
+def arquitectura_cli():
+    fig, ax = lienzo(16, 8.6, (0, 16), (0, 8.6))
+    ax.text(8, 8.3, "gateway_cli_pwm — arquitectura de módulos", ha="center", fontsize=15,
+            fontweight="bold")
+    caja(ax, 6.3, 6.6, 3.4, 1.0, "main.cpp\nsetup() + loop() cooperativo", GRIS, fs=9, bold=True)
+
+    caja(ax, 0.3, 4.3, 2.8, 1.3, "button\nRELEASED / DEBOUNCE_*\n/ PRESSED", MORADO, fs=8.5)
+    caja(ax, 3.4, 4.3, 2.8, 1.3, "serial_line\nlínea con eco,\nbuffer 64, overflow", AZUL, fs=8.5)
+    caja(ax, 6.5, 4.3, 3.0, 1.3, "cli\ntabla de comandos,\nvalidación, respuestas", AZUL, fs=8.5)
+    caja(ax, 9.8, 4.3, 2.9, 1.3, "application\nmodos LEVEL / MANUAL\n/ FADE", VERDE, fs=8.5)
+    caja(ax, 13.0, 4.3, 2.7, 1.3, "brightness\ncurva lineal / gamma 2.2", VERDE, fs=8.5)
+
+    caja(ax, 6.5, 2.0, 2.2, 1.3, "system_clock\nRCC, MCO", NARANJA, fs=8.5)
+    caja(ax, 9.0, 2.0, 2.2, 1.3, "pwm\nPSC / ARR / CCR", NARANJA, fs=8.5)
+    caja(ax, 11.5, 2.0, 2.0, 1.3, "adc_monitor\nVREFINT, temp.", NARANJA, fs=8.5)
+    caja(ax, 13.8, 2.0, 1.9, 1.3, "radio_probe\nSPI1 SX1276", NARANJA, fs=8.5)
+
+    caja(ax, 0.3, 0.2, 15.4, 1.1, "Hardware: RCC · TIM3_CH2 → PB5 (LD1) · PB2 (B1) · LPUART1 PA2/PA3 → "
+                                  "ST-LINK VCP · ADC1 · SPI1 → SX1276 · MCO PA8", GRIS, fs=9)
+
+    for x in (1.7, 4.8, 8.0, 11.25):
+        flecha(ax, (8.0, 6.6), (x, 5.6))
+    flecha(ax, (6.2, 4.95), (6.5, 4.95), "línea", fs=7, off=(0, 0.1))
+    flecha(ax, (9.5, 4.95), (9.8, 4.95), "", fs=7)
+    flecha(ax, (12.7, 4.95), (13.0, 4.95), "")
+    flecha(ax, (1.7, 4.3), (10.3, 4.3), "evento pulsación (vía main)", fs=7, rad=0.25,
+           off=(-3.2, -0.75), ls="--")
+    flecha(ax, (11.25, 4.3), (10.1, 3.3), "duty ‰", fs=7, off=(0.45, -0.1))
+    for x in (7.6, 10.1, 12.5, 14.75):
+        flecha(ax, (8.0, 4.3), (x, 3.3), "", color="#1a4e8a")
+    ax.text(7.2, 3.75, "consultas y\ncambios", fontsize=7, color="#1a4e8a", ha="right")
+    ax.text(0.4, 3.0, "Reglas:\n· cada módulo .h/.cpp tiene una tarea\n"
+                      "· button y serial_line no conocen la CLI\n"
+                      "· application no lee el hardware\n"
+                      "· pwm y system_clock informan desde registros", fontsize=8, va="top")
+    fig.savefig(IMG / "cli-arquitectura.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
+def maquina_boton():
+    fig, ax = lienzo(12, 5.2, (0, 12), (0, 5.2))
+    ax.text(6, 4.95, "Máquina de estados del botón B1 (antirrebote 20 ms)", ha="center",
+            fontsize=13, fontweight="bold")
+    estado(ax, 2.0, 3.5, "RELEASED", VERDE, w=2.6)
+    estado(ax, 10.0, 3.5, "DEBOUNCE_PRESS", "#c9dcf2", w=2.8)
+    estado(ax, 10.0, 1.0, "PRESSED", NARANJA, w=2.6)
+    estado(ax, 2.0, 1.0, "DEBOUNCE_RELEASE", "#c9dcf2", w=2.8)
+    flecha(ax, (3.3, 3.65), (8.6, 3.65), "nivel activo (guarda t0)", fs=8)
+    flecha(ax, (8.6, 3.35), (3.3, 3.35), "vuelve a inactivo antes de 20 ms → rebote", fs=8,
+           off=(0, -0.5), color="#aa0000")
+    flecha(ax, (10.0, 3.05), (10.0, 1.45), "estable ≥ 20 ms\n→ EVENTO (1 por pulsación)",
+           fs=8, off=(-1.4, -0.2), color="#1a7a1a")
+    flecha(ax, (8.7, 1.15), (3.4, 1.15), "nivel inactivo (guarda t0)", fs=8)
+    flecha(ax, (3.4, 0.85), (8.7, 0.85), "vuelve a activo antes de 20 ms → rebote", fs=8,
+           off=(0, -0.5), color="#aa0000")
+    flecha(ax, (2.0, 1.45), (2.0, 3.05), "estable ≥ 20 ms", fs=8, off=(-0.9, 0))
+    fig.savefig(IMG / "cli-boton-estados.png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+
+# --------------------------------------------------------------------------
+#  Calculo PSC/ARR/CCR: replica de pwm_compute_timing() del firmware
+# --------------------------------------------------------------------------
+def pwm_timing(f_tim, f_pwm, duty_permille):
+    total = (f_tim + f_pwm // 2) // f_pwm
+    div = (total + 65535) // 65536
+    period = (total + div // 2) // div
+    ccr = (period * duty_permille + 500) // 1000
+    return div - 1, period - 1, ccr, f_tim / (div * period), ccr / period
+
+
 if __name__ == "__main__":
     trama = "NODE-02|14|2|5.0714|-75.5246|0|3920|0.02|3|60da5124"
     ack = "ACK|NODE-02|14|b8905636"
@@ -370,4 +444,16 @@ if __name__ == "__main__":
     diagrama_bloques()
     maquina_estados()
     temporizacion(toa_t, toa_a, uart)
+    arquitectura_cli()
+    maquina_boton()
+    print("\nPWM con f_TIM = 32 MHz (PSC, ARR, CCR, f real, D real):")
+    for f, d in ((500, 500), (1000, 250), (1000, 500), (25000, 250), (100000, 500), (1, 500)):
+        psc, arr, ccr, fr, dr = pwm_timing(32_000_000, f, d)
+        print(f"  {f:>6} Hz {d / 10:5.1f} % -> PSC={psc:<4} ARR={arr:<6} CCR={ccr:<6} "
+              f"f={fr:.4f} Hz D={dr * 100:.2f} %")
+    print("Gamma 2.2 a 1 kHz (ARR+1 = 32000):")
+    for b in (0, 20, 40, 60, 80, 100):
+        d = 1000 if b == 100 else (0 if b == 0 else round((b / 100) ** 2.2 * 1000))
+        print(f"  B={b:3d} % -> {d / 10:5.1f} % CCR={pwm_timing(32_000_000, 1000, d)[2]}"
+              f"   (lineal CCR={pwm_timing(32_000_000, 1000, b * 10)[2]})")
     print("Figuras en", IMG)

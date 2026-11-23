@@ -22,6 +22,10 @@ Las figuras de este documento se generan con [`tools/generar_figuras.py`](tools/
 (`python tools/generar_figuras.py`, necesita `matplotlib`). El mismo script calcula el
 tiempo en el aire de las tramas LoRa que se usa en las secciones 2 y 5.
 
+**Firmware de la guía STM32 (reloj, PWM, CLI):** la sección 10 y
+[`firmware/gateway_cli_pwm`](firmware/gateway_cli_pwm/) cubren la guía *"STM32, PWM,
+CLI y código limpio"* sobre la placa del gateway.
+
 ---
 
 ## 1. Diagrama de conexión
@@ -47,7 +51,7 @@ para cargar el firmware y para el monitor serie.
 **Gateway (B-L072Z-LRWAN1).** No lleva cableado externo: el STM32L072 y el SX1276
 están dentro del módulo Murata y se comunican por líneas internas. Se conecta la antena
 al SMA **CN10** y el micro-USB **CN7** (ST-LINK) al PC del PMU; por ese mismo cable se
-carga el firmware (SWD) y se reciben las tramas (puerto COM virtual del USART2).
+carga el firmware (SWD) y se reciben las tramas (puerto COM virtual del LPUART1).
 
 Precauciones:
 - Enroscar la antena **antes** de energizar cualquier placa (transmitir sin carga puede dañar el PA del SX1276).
@@ -63,7 +67,7 @@ Flujo de un reporte:
 2. El ESP32 arma la trama de 10 campos, la firma con HMAC-SHA256 y la escribe en el FIFO del **SX1276 por SPI**.
 3. El SX1276 la transmite; al terminar levanta **DIO0 = TxDone** y el nodo pasa a recepción durante 1,5 s.
 4. En el gateway, el SX1276 levanta **DIO0 = RxDone**; la ISR solo marca una bandera y el `loop()` lee el FIFO por SPI.
-5. El STM32 valida la trama y la reenvía por **USART2 → ST-LINK → USB** al PC, añadiendo el RSSI.
+5. El STM32 valida la trama y la reenvía por **LPUART1 → ST-LINK → USB** al PC, añadiendo el RSSI.
 6. Si la firma es correcta, el gateway responde por radio con `ACK|DEVICE_ID|SEQ|HMAC8`, y el nodo muestra `RECIBIDO POR PMU`.
 
 ### Secuencia esperada (referencia para la captura)
@@ -88,7 +92,7 @@ puntos **B** y **C** en la B-L072Z):
 | D2 | MOSI nodo (IO27) | SPI — MOSI, MSB primero, 8 bits |
 | D3 | MISO nodo (IO19) | SPI — MISO |
 | D4 | DIO0 nodo (IO26) | — (flanco de subida = TxDone / RxDone) |
-| D5 | USART2 TX gateway (PA2) | Async Serial, 115200, 8N1 |
+| D5 | LPUART1 TX gateway (PA2) | Async Serial, 115200, 8N1 |
 | GND | GND común de las placas | — |
 
 Frecuencia de muestreo: ≥ 16 MS/s (SPI a 2 MHz). Disparo: flanco de bajada en D0.
@@ -185,7 +189,7 @@ La ISR no toca SPI ni Serial; solo escribe una variable `volatile`.
 | PA1 | GPIO salida | Conmutador de antena: camino RX |
 | PC1 | GPIO salida | Conmutador de antena: TX por PA_BOOST |
 | PC2 | GPIO salida | Conmutador de antena: TX por RFO |
-| PA2 / PA3 | USART2 TX / RX | Puerto COM virtual del ST-LINK, 115200 8N1 → PC |
+| PA2 / PA3 | LPUART1 TX / RX (AF6) | Puerto COM virtual del ST-LINK, 115200 8N1 → PC |
 | PB5 | GPIO salida | LD1 verde: pulso de 40 ms por trama válida reenviada |
 | PB6 | GPIO salida | LD3 azul: 1 Hz escuchando, 5 Hz en error de radio |
 | PB7 | GPIO salida | LD4 rojo: 200 ms por CRC erróneo o trama rechazada |
@@ -252,7 +256,7 @@ Máximo del FIFO (PL = 255 B):                 ToA ≈ 399,6 ms
 | SPI1 | Gateway | Serie síncrono, 4 hilos, 2 MHz modo 0 (interno al módulo) | Registros y FIFO del SX1276 |
 | I2C | Nodo | Serie síncrono, 2 hilos, maestro, dirección 0x3C | Pantalla OLED SSD1306 128x64 |
 | UART0 | Nodo | Serie asíncrono 115200 8N1 por el puente USB de la placa | Carga de firmware, logs, disparo de pruebas |
-| USART2 | Gateway | Serie asíncrono 115200 8N1 → VCP del ST-LINK (USB) | Salida de tramas `...\|RSSI` hacia el backend |
+| LPUART1 | Gateway | Serie asíncrono 115200 8N1 → VCP del ST-LINK (USB) | Salida de tramas `...\|RSSI` hacia el backend |
 | GPIO digital (matriz) | Nodo | 4 entradas con pull-up + 4 salidas de barrido | Teclado 4x4 (antirrebote 30 ms) |
 | GPIO digital | Ambos | Salida | NSS y RESET del SX1276; conmutador de antena y TCXO (gateway) |
 | Interrupción externa (EXTI) | Gateway | Entrada digital, flanco de subida | DIO0 → ISR que levanta una bandera |
@@ -276,7 +280,7 @@ Máximo del FIFO (PL = 255 B):                 ToA ≈ 399,6 ms
 | **mbedTLS** (`mbedtls/md.h`, incluido en ESP-IDF) | Nodo | HMAC-SHA256 de la trama y del ACK esperado |
 | `hmac_sha256.cpp` (propio) | Gateway | SHA-256 (FIPS 180-4) y HMAC (RFC 2104) sin dependencias, para no cargar mbedTLS en 192 KB de flash; verificado contra Python |
 | **Core Arduino-ESP32** (`espressif32`, placa `ttgo-lora32-v21`) | Nodo | `setup()/loop()`, `millis()`, `analogReadMilliVolts()`, `esp_random()` (semilla de los retardos aleatorios) |
-| **Core STM32duino** (`ststm32@20.0.0`, placa `disco_l072cz_lrwan1`) | Gateway | `Serial` sobre USART2, `attachInterrupt` (EXTI), `pinMode`, `millis()` |
+| **Core STM32duino** (`ststm32@20.0.0`, placa `disco_l072cz_lrwan1`) | Gateway | `Serial` sobre LPUART1, `attachInterrupt` (EXTI), `pinMode`, `millis()` |
 
 En el gateway se excluyen de RadioLib los drivers que no se usan
 (`-D RADIOLIB_EXCLUDE_SX126X`, `..._LORAWAN`, etc.) para que el firmware quepa con
@@ -344,3 +348,29 @@ Errores conocidos y límites:
 - El ejemplo `ACK|NODE-01|14|b8905636` del README del gateway no coincide con la llave de demo
   `REDSILIENTE_KEY_2026` (con esa llave el HMAC8 de `ACK|NODE-01|14` es `1dcf7874`); la trama de datos de ejemplo (`60da5124`) sí coincide.
 - Las medidas de la sección 2 (Logic 2) están pendientes de la captura con el analizador.
+
+## 10. Reloj, PWM, botón y CLI en el gateway (guía STM32)
+
+El firmware [`firmware/gateway_cli_pwm`](firmware/gateway_cli_pwm/) usa la misma
+B-L072Z-LRWAN1 del gateway para cumplir la guía *"STM32, PWM, CLI y código limpio"*. Es
+un firmware aparte del receptor LoRa porque los dos ocupan el mismo puerto serie. Compila
+con PlatformIO sin advertencias (RAM 9,9 %, Flash 23,4 %). Su README tiene el detalle;
+aquí, dónde se cumple cada punto:
+
+| Punto de la guía | Dónde | Resumen |
+|---|---|---|
+| 2. Entorno y hardware | README del firmware, sec. 1 | PWM en LD1 = PB5 = **TIM3_CH2** (verificado en el mapa de pines del core, no supuesto); LD2/PA5 descartado por DIO4; botón B1 = PB2 con nivel activo detectado |
+| 3. Arquitectura | sec. 3 y `cli-arquitectura.png` | Módulos `system_clock`, `pwm`, `button`, `serial_line`, `cli`, `application`, `brightness`, `adc_monitor`, `radio_probe`; `loop()` sin `delay()` |
+| 4. Reloj | sec. 4 | HSI16 × 4 / 2 = **32 MHz**; SYSCLK, HCLK, PCLK1/2 y reloj de timers leídos de RCC; MCO = 2 MHz en PA8 para medirlo |
+| 5. Timer y PWM | sec. 5 | Ascendente, alineado al flanco, PWM modo 1, activo alto, preload; tabla de PSC/ARR/CCR y tiempos |
+| 6. Fade perceptual | sec. 6 | Niveles 0–100 % con gamma 2.2 (2,9 / 13,3 / 32,5 / 61,2 %); `fade linear` vs `fade gamma` |
+| 7. Botón | sec. 7 y `cli-boton-estados.png` | RELEASED / DEBOUNCE_PRESS / PRESSED / DEBOUNCE_RELEASE, 20 ms, un evento por pulsación |
+| 8. Serial y CLI | sec. 2 y 8 | LPUART1 (PA2/PA3) → ST-LINK, 115200 8N1; línea con terminador, buffer de 64 con overflow; `help`, `status`, `frequency`, `duty`, `set frequency`, `set duty`, errores claros |
+| 9. Clean code | todo el firmware | Nombres descriptivos, constantes con nombre, interfaces en `.h`, comentarios del *por qué*, validación de argumentos |
+| 10. Periféricos extra | sec. 9 | ADC (VDDA y temperatura), SPI (lee `RegVersion` = 0x12 del SX1276), UART, MCO |
+| 11. Validación Logic 2 | sec. 10 | Montaje, canales y 13 casos de prueba |
+| 12. Entregables | sec. 1–10 | Faltan solo las **capturas de terminal y de Logic 2 con la placa** |
+| 13. Sustentación | sec. 11 | Respuestas cortas a las 11 preguntas |
+
+Hallazgo al revisar el core: en esta placa el `Serial` de STM32duino es **LPUART1**
+(`SERIAL_UART_INSTANCE 101`), no USART2; las secciones anteriores ya lo reflejan.
