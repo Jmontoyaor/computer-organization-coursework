@@ -21,3 +21,5 @@ integrando a este repositorio a medida que avance:
   ensamblador ARM sobre la NUCLEO-L476RG con la Multi-Function Shield — el tono lo
   genera el TIM2 por PWM y el display muestra la frecuencia de cada nota. Incluye el
   informe.
+- [`redsiliente-lora`](redsiliente-lora/): proyecto final — red LoRa P2P de
+  reporte de daños con nodos ESP32 (LILYGO) y gateway STM32L072 (B-L072Z-LRWAN1).
